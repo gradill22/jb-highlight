@@ -1,8 +1,10 @@
-// The MyST plugin loads in a real Jupyter Book build and injects the widget on every page.
+// The MyST plugin loads in a real Jupyter Book build and injects the widget on every page,
+// whether myst.yml points at a local file or at a URL (which MyST downloads on its own).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { createServer } from "node:http";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -10,17 +12,18 @@ import { fileURLToPath } from "node:url";
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const jupyterBook = path.join(repo, "node_modules/.bin/jupyter-book");
+const pluginFile = path.join(repo, "dist/myst-annotate.mjs");
 
-test("jupyter-book build loads the plugin and emits the widget", { timeout: 300_000 }, async () => {
+/** Build a two-page book whose myst.yml lists `pluginEntry`, and check the output. */
+const buildAndCheck = async function (pluginEntry) {
   const book = await fs.mkdtemp(path.join(os.tmpdir(), "myst-annotate-"));
   try {
-    const plugin = path.relative(book, path.join(repo, "dist/myst-annotate.mjs"));
     await fs.writeFile(path.join(book, "myst.yml"), [
       "version: 1",
       "project:",
       "  title: Test",
       "  plugins:",
-      `    - ${plugin}`,
+      `    - ${pluginEntry(book)}`,
       "  toc:",
       "    - file: index.md",
       "    - file: sub/page.md",
@@ -35,11 +38,15 @@ test("jupyter-book build loads the plugin and emits the widget", { timeout: 300_
     await fs.writeFile(path.join(book, "sub/page.md"), "# Nested\n\nMore text.\n");
 
     const { stdout, stderr } = await promisify(execFile)(jupyterBook, ["build", "--site"], { cwd: book });
-    assert.match(stdout + stderr, /myst-annotate .* loaded: 0 directives, 0 roles, 1 transform/);
+    const log = stdout + stderr;
+    assert.match(log, /myst-annotate .* loaded: 0 directives, 0 roles, 1 transform/);
+    assert.doesNotMatch(log, /⛔|Error/, log);
 
     const assets = await fs.readdir(path.join(book, "_build/site/public"));
-    const widgets = assets.filter((f) => /^widget-[0-9a-f]+\.js$/.test(f));
+    const widgets = assets.filter((f) => /^myst-annotate-widget-[0-9a-f]+\.js$/.test(f));
     assert.equal(widgets.length, 1, `one widget asset in ${assets}`);
+    const widget = await fs.readFile(path.join(book, "_build/site/public", widgets[0]), "utf8");
+    assert.equal(widget, await fs.readFile(path.join(repo, "dist/widget.js"), "utf8"), "the bundled widget");
 
     for (const page of ["index", "page"]) {
       const json = await fs.readFile(path.join(book, `_build/site/content/${page}.json`), "utf8");
@@ -47,5 +54,23 @@ test("jupyter-book build loads the plugin and emits the widget", { timeout: 300_
     }
   } finally {
     await fs.rm(book, { recursive: true, force: true });
+  }
+};
+
+test("plugin listed as a local path", { timeout: 300_000 }, async () => {
+  await buildAndCheck((book) => path.relative(book, pluginFile));
+});
+
+test("plugin listed as a URL (MyST downloads only that one file)", { timeout: 300_000 }, async () => {
+  const source = await fs.readFile(pluginFile);
+  const server = createServer((req, res) => {
+    res.writeHead(200, { "content-type": "text/javascript" });
+    res.end(source);
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    await buildAndCheck(() => `http://127.0.0.1:${server.address().port}/myst-annotate.mjs`);
+  } finally {
+    server.close();
   }
 });

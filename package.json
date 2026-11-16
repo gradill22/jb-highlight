@@ -5,16 +5,15 @@
   "type": "module",
   "main": "./dist/myst-annotate.mjs",
   "exports": {
-    ".": "./dist/myst-annotate.mjs",
-    "./widget.js": "./dist/widget.js"
+    ".": "./dist/myst-annotate.mjs"
   },
   "files": [
-    "dist"
+    "dist/myst-annotate.mjs"
   ],
   "scripts": {
     "build": "node scripts/build.mjs",
     "test": "npm run build && node --test \"test/*.test.mjs\"",
-    "prepack": "npm run build"
+    "prepare": "npm run build"
   },
   "keywords": [
     "jupyter-book",
@@ -29,7 +28,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gradill22/jb-highlight.git"
+    "url": "git+https://github.com/gradill22/myst-annotate.git"
   },
   "engines": {
     "node": ">=18"

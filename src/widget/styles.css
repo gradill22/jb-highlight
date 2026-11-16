@@ -26,8 +26,13 @@ button { font: inherit; color: inherit; }
   border: 2px solid rgba(0,0,0,.15); cursor: pointer;
 }
 .ma-swatch:hover { transform: scale(1.15); }
-.ma-clear { padding: 0 4px; border: none; background: none; color: var(--ma-muted); font-size: 14px; line-height: 1; cursor: pointer; }
-.ma-clear:hover { color: var(--ma-fg); }
+/* "No colour": a white circle with a red slash. */
+.ma-swatch-clear {
+  background: linear-gradient(to bottom right, transparent calc(50% - 1.5px), #e11d48 calc(50% - 1.5px),
+    #e11d48 calc(50% + 1.5px), transparent calc(50% + 1.5px)), #fff;
+}
+.ma-dismiss { padding: 0 4px; border: none; background: none; color: var(--ma-muted); font-size: 14px; line-height: 1; cursor: pointer; }
+.ma-dismiss:hover { color: var(--ma-fg); }
 .ma-annotate {
   display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px;
   border: none; border-radius: 6px; background: none; cursor: pointer; font-weight: 500;
@@ -35,11 +40,14 @@ button { font: inherit; color: inherit; }
 .ma-annotate:hover { background: var(--ma-surface); }
 
 .ma-popover { width: min(340px, calc(100vw - 16px)); max-height: 50vh; overflow: auto; padding: 4px 0; }
+.ma-popover > .ma-dismiss { position: absolute; top: 8px; right: 8px; z-index: 1; }
 .ma-pop-note { padding: 8px 12px; }
+.ma-pop-note:first-of-type { padding-right: 32px; }
 .ma-pop-note + .ma-pop-note { border-top: 1px solid var(--ma-border); }
 .ma-pop-foot { display: flex; align-items: center; gap: 2px; margin-top: 4px; }
 .ma-pop-foot .ma-meta { flex: 1; }
 .ma-pop-hl { display: flex; align-items: center; gap: 6px; padding: 8px 12px 6px; border-top: 1px solid var(--ma-border); }
+.ma-picker { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
 
 /* ── Shared bits ── */
 
@@ -59,7 +67,7 @@ button { font: inherit; color: inherit; }
 .ma-btn-primary { background: var(--ma-focus); border-color: var(--ma-focus); color: #fff; }
 .ma-btn-primary:hover:not(:disabled) { background: var(--ma-focus); filter: brightness(1.1); }
 .ma-btn-danger { background: var(--ma-danger); border-color: var(--ma-danger); color: #fff; }
-.ma-btn-danger:hover { background: var(--ma-danger); filter: brightness(1.1); }
+.ma-btn-danger:hover:not(:disabled) { background: var(--ma-danger-hover); border-color: var(--ma-danger-hover); }
 button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--ma-focus); outline-offset: 1px; }
 
 .ma-meta { font-size: 12px; color: var(--ma-muted); }

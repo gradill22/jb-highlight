@@ -1,6 +1,6 @@
 // The sidebar: tabs, This page / Whole book scope, search, show/hide, and the cards.
 import { h, icon, ICONS } from "./util.js";
-import { meta, noteBody, iconButton } from "./views.js";
+import { meta, noteBody, iconButton, notePicker } from "./views.js";
 import { renderMarkdown } from "./markdown.js";
 import * as store from "./store.js";
 
@@ -141,16 +141,21 @@ export const createSidebar = function (app) {
     }
 
     const editing = item.draft !== undefined;
+    // Annotations whose text is on the page can be highlighted from their card.
+    const highlightable = kind === "annotations" && !item.orphan && !editing;
+    const { toggle, picker } = highlightable ? notePicker(app, path, item) : {};
     return h("article", { class: `ma-card${focused}`, "data-id": item.id, onclick: open },
       kind === "annotations" ? h("blockquote", { class: "ma-quote" }, item.text) : null,
       editing ? editor(path, kind, item) : noteBody(item.body),
       h("footer", { class: "ma-card-foot" },
         meta(item),
         editing ? null : [
+          toggle,
           iconButton("edit", "Edit", () => app.startEdit(path, kind, item.id)),
           iconButton("trash", "Delete", () => app.removeItem(path, kind, item.id)),
         ],
       ),
+      picker,
     );
   };
 

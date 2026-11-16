@@ -4,10 +4,11 @@ Private, local highlighting and annotation for [Jupyter Book 2](https://jupyterb
 
 ## What readers can do
 
-- **Highlight:** select text and pick one of five colours from the toolbar. Highlights can overlap: a new one is drawn on top, and removing it shows the one underneath again.
+- **Highlight:** select text and pick one of five colours from the toolbar. The last swatch, a white circle with a red slash, clears highlights from the selection. **✕** closes the toolbar and leaves the text selected. Highlights can overlap: a new one is drawn on top, and removing it shows the one underneath again.
 - **Annotate:** select text and choose **Annotate**. The sidebar opens with a new note. Notes support Markdown and LaTeX math (`$…$` and `$$…$$`), with a Write/Preview toggle. Annotated text gets a dotted amber underline.
 - **Page notes:** notes about the whole page, written from the sidebar.
-- **Click marked text** to bring up a popover for the notes under that point, with Edit and Delete. If the text is highlighted, the popover also lets you recolour or remove the highlight.
+- **Click marked text** to bring up a popover for the notes under that point, with Highlight, Edit and Delete. If the text is highlighted, the popover also lets you recolour or remove the highlight.
+- **Highlight a note's text:** the highlighter icon next to Edit, on a note's sidebar card or in its popover, opens the colour swatches for that note's quoted text.
 - **Sidebar:** opened from the tab on the right edge or with **Alt/⌥+Shift+A**. It has these parts:
   - tabs for Annotations, Highlights, Page notes and Orphans (notes whose text is no longer on the page)
   - a **This page / Whole book** switch
@@ -15,7 +16,7 @@ Private, local highlighting and annotation for [Jupyter Book 2](https://jupyterb
   - an eye button that hides or shows every mark
 - **Keyboard:** with text selected, **A** annotates and **H** highlights in the colour you used last.
 - **Drafts:** unsaved notes are kept and come back the next time you open the page.
-- Deleting anything asks for confirmation first. The UI follows the theme's light and dark modes, and on narrow screens the sidebar covers the full width.
+- Deleting a note asks for confirmation first. Removing a highlight doesn't. The UI follows the theme's light and dark modes, and on narrow screens the sidebar covers the full width.
 
 ## Installation
 
@@ -41,15 +42,17 @@ npm install github:gradill22/myst-annotate
 
 Then use the same `node_modules/...` path as above.
 
-**From a URL:** MyST downloads plugins listed as URLs. The URL must serve the JavaScript file itself, for example from a CDN that mirrors npm:
+**From a URL:** MyST downloads plugins listed as URLs. The URL must serve the JavaScript file itself. Every GitHub release has the plugin attached:
 
 ```yaml
 project:
   plugins:
-    - https://cdn.jsdelivr.net/npm/myst-annotate@0.1.0/dist/myst-annotate.mjs
+    - https://github.com/gradill22/myst-annotate/releases/download/v0.1.0/myst-annotate.mjs
 ```
 
-> **`Error reading plugin: SyntaxError: Unexpected token '<'`** means the URL returned a web page (HTML), not JavaScript. A `github.com/…/blob/…` link does this, for example. The built plugin isn't committed to the repository, so use the npm, GitHub-install or CDN options above.
+A CDN that mirrors npm works too, for example `https://cdn.jsdelivr.net/npm/myst-annotate@0.1.0/dist/myst-annotate.mjs`. Pinning a version keeps your book from changing unexpectedly. MyST keeps a downloaded plugin for up to 30 minutes before fetching it again.
+
+> **`Error reading plugin: SyntaxError: Unexpected token '<'`** means the URL returned a web page (HTML), not JavaScript. A `github.com/…/blob/…` link does this, for example. The built plugin isn't committed to the repository, so use one of the options above.
 
 Build as usual (`jupyter-book build --html` or `jupyter-book start`). The log should include:
 
@@ -77,6 +80,21 @@ npm test        # builds, then runs the plugin, Markdown and browser (Playwright
 ```
 
 `docs/SPEC.md` is the approved feature specification.
+
+### Releasing
+
+1. Set the new version in `package.json` (for example with `npm version patch`, which also commits and tags it) and push to `main`.
+2. Publish a GitHub release whose tag is `v` plus that version, for example `v0.1.1`.
+
+The [release workflow](.github/workflows/release.yml) then runs the tests and attaches `myst-annotate.mjs` to the release. It also publishes the package to npm through [trusted publishing](https://docs.npmjs.com/trusted-publishers), so no npm token is stored in GitHub. The workflow fails if the tag doesn't match `package.json`, and it skips the npm step for versions that are already published.
+
+Trusted publishing only works once the package exists on npm and is linked to this repository. The first version is published by hand:
+
+```bash
+npm login
+npm publish
+npx npm@11.21.1 trust github myst-annotate --file release.yml --repo gradill22/myst-annotate --allow-publish
+```
 
 ## License
 

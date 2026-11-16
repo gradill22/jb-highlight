@@ -1,0 +1,53 @@
+# Runs when a GitHub release is published (tag vX.Y.Z, matching package.json):
+# tests, attaches the plugin file to the release, and publishes the package to npm.
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write # attach myst-annotate.mjs to the release
+  id-token: write # npm trusted publishing (OIDC); no npm token is stored in GitHub
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Check the release tag matches package.json
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::Release tag $GITHUB_REF_NAME does not match package.json version (expected v$version)"
+            exit 1
+          fi
+
+      # Trusted publishing needs npm 11.5.1 or later; Node 22 ships with npm 10.
+      - run: npm install -g npm@11.21.1
+
+      - run: npm ci # also builds dist/ (the "prepare" script)
+
+      - run: npx playwright install --with-deps chromium
+
+      - run: npm test
+
+      - name: Attach the plugin to the release
+        run: gh release upload "$GITHUB_REF_NAME" dist/myst-annotate.mjs --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Publish to npm
+        run: |
+          name="$(node -p 'require("./package.json").name')"
+          version="$(node -p 'require("./package.json").version')"
+          if npm view "$name@$version" version > /dev/null 2>&1; then
+            echo "$name@$version is already on npm; skipping publish."
+          else
+            npm publish
+          fi

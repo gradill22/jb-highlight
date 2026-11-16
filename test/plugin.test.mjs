@@ -8,11 +8,17 @@ import { createServer } from "node:http";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const jupyterBook = path.join(repo, "node_modules/.bin/jupyter-book");
 const pluginFile = path.join(repo, "dist/myst-annotate.mjs");
+
+// Run jupyter-book's JS entry point with node: node_modules/.bin/jupyter-book is a
+// shell script (or a .cmd file on Windows), which execFile cannot run everywhere.
+const require = createRequire(import.meta.url);
+const jupyterBookPkg = require.resolve("jupyter-book/package.json");
+const jupyterBook = path.join(path.dirname(jupyterBookPkg), require(jupyterBookPkg).bin["jupyter-book"]);
 
 /** Build a two-page book whose myst.yml lists `pluginEntry`, and check the output. */
 const buildAndCheck = async function (pluginEntry) {
@@ -23,7 +29,7 @@ const buildAndCheck = async function (pluginEntry) {
       "project:",
       "  title: Test",
       "  plugins:",
-      `    - ${pluginEntry(book)}`,
+      `    - ${await pluginEntry(book)}`,
       "  toc:",
       "    - file: index.md",
       "    - file: sub/page.md",
@@ -37,7 +43,7 @@ const buildAndCheck = async function (pluginEntry) {
     await fs.writeFile(path.join(book, "index.md"), "# Home\n\nSome text.\n");
     await fs.writeFile(path.join(book, "sub/page.md"), "# Nested\n\nMore text.\n");
 
-    const { stdout, stderr } = await promisify(execFile)(jupyterBook, ["build", "--site"], { cwd: book });
+    const { stdout, stderr } = await promisify(execFile)(process.execPath, [jupyterBook, "build", "--site"], { cwd: book });
     const log = stdout + stderr;
     assert.match(log, /myst-annotate .* loaded: 0 directives, 0 roles, 1 transform/);
     assert.doesNotMatch(log, /⛔|Error/, log);
@@ -57,8 +63,15 @@ const buildAndCheck = async function (pluginEntry) {
   }
 };
 
-test("plugin listed as a local path", { timeout: 300_000 }, async () => {
-  await buildAndCheck((book) => path.relative(book, pluginFile));
+test("plugin listed as a local path (installed as npm would)", { timeout: 300_000 }, async () => {
+  await buildAndCheck(async (book) => {
+    // Lay the plugin out as `npm install myst-annotate` does. Keeping it inside the book also
+    // keeps it on the same drive on Windows, where paths cannot be relative across drives.
+    const dir = path.join(book, "node_modules/myst-annotate/dist");
+    await fs.mkdir(dir, { recursive: true });
+    await fs.copyFile(pluginFile, path.join(dir, "myst-annotate.mjs"));
+    return "node_modules/myst-annotate/dist/myst-annotate.mjs";
+  });
 });
 
 test("plugin listed as a URL (MyST downloads only that one file)", { timeout: 300_000 }, async () => {

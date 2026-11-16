@@ -115,6 +115,7 @@ const render = function ({ el }) {
   const storageKey = STORAGE_KEY_PREFIX + location.pathname;
 
   let items = [];   // [{ start, end, color, text }]
+  let activeItem = null; // saved highlight the tooltip acts on after it is clicked
 
   // ── Persistence ──
 
@@ -172,6 +173,12 @@ const render = function ({ el }) {
   };
 
   const applyHighlight = function (colorId) {
+    if (activeItem) {
+      activeItem.color = colorId;
+      save();
+      paint();
+      return;
+    }
     const sel = selectionOffsets();
     if (!sel) return;
     removeOverlapping(sel); // re-colouring replaces the old highlight
@@ -182,6 +189,12 @@ const render = function ({ el }) {
   };
 
   const removeHighlightAtSelection = function () {
+    if (activeItem) {
+      items = items.filter((item) => item !== activeItem);
+      save();
+      paint();
+      return;
+    }
     const sel = selectionOffsets();
     if (!sel) return;
     removeOverlapping(sel);
@@ -256,6 +269,21 @@ const render = function ({ el }) {
 
   const hideTooltip = function () {
     tooltip.style.display = "none";
+    activeItem = null;
+  };
+
+  /** The saved highlight (and its line box) under viewport point (x, y), if any. */
+  const highlightAt = function (x, y) {
+    for (const item of items) {
+      const range = locate(root, item);
+      if (!range) continue;
+      for (const rect of range.getClientRects()) {
+        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+          return { item, rect };
+        }
+      }
+    }
+    return null;
   };
 
   // ── Event wiring ──
@@ -264,8 +292,8 @@ const render = function ({ el }) {
     const sel = window.getSelection();
     if (!sel || sel.isCollapsed || sel.toString().trim() === "" ||
         !root.contains(sel.getRangeAt(0).commonAncestorContainer)) {
-      // Only hide if the mouse isn't currently over the tooltip
-      if (tooltip.matches(":hover")) return;
+      // Only hide if the mouse isn't over the tooltip and it isn't open for a clicked highlight
+      if (tooltip.matches(":hover") || activeItem) return;
       hideTooltip();
       return;
     }
@@ -280,11 +308,23 @@ const render = function ({ el }) {
     hideTooltip();
   };
 
+  // Clicking an existing highlight opens the tooltip for it (recolour or remove).
+  const onClick = function (e) {
+    if (tooltip.contains(e.target)) return;
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed) return; // a text selection — handled by selectionchange
+    const hit = highlightAt(e.clientX, e.clientY);
+    if (!hit) return;
+    activeItem = hit.item;
+    showTooltip(hit.rect.left + hit.rect.width / 2, hit.rect.top);
+  };
+
   // ── Init ──
 
   injectStyles();
   document.addEventListener("selectionchange", onSelectionChange);
   document.addEventListener("mousedown", onMousedown);
+  document.addEventListener("click", onClick);
   load();
   paint();
 
@@ -292,6 +332,7 @@ const render = function ({ el }) {
   return function cleanup() {
     document.removeEventListener("selectionchange", onSelectionChange);
     document.removeEventListener("mousedown", onMousedown);
+    document.removeEventListener("click", onClick);
     tooltip.remove();
     clearPaint();
   };

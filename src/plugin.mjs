@@ -31,7 +31,7 @@ const injectWidget = {
 
 const plugin = {
   name: "myst-annotate",
-  author: "Grady Dillon (ARA)",
+  author: "Grady Dillon",
   license: "MIT",
   transforms: [injectWidget],
 };

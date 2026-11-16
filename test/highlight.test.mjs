@@ -2,7 +2,7 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import {
-  launch, newPage, highlights, stored, selectText, textBox, clickText, ui, floatVisible, confirmDialog,
+  launch, newPage, highlights, stored, selectText, textBox, clickText, ui, floatVisible,
 } from "./helpers.mjs";
 
 const empty = (h, name) => !h[name] || h[name].length === 0;
@@ -21,13 +21,21 @@ before(async () => {
 });
 after(() => browser.close());
 
-test("toolbar has Annotate, five swatches and ✕", async () => {
+test("toolbar has Annotate, five colours, the clear swatch last, and ✕", async () => {
   await selectText(page, "#p2", 0, 8);
   assert.ok(await floatVisible(page));
   assert.equal(await ui(page, ".ma-float .ma-annotate").count(), 1);
   assert.deepEqual(await ui(page, ".ma-float .ma-swatch").evaluateAll((els) => els.map((e) => e.dataset.color)),
-    ["yellow", "magenta", "cyan", "green", "red"]);
-  assert.equal(await ui(page, ".ma-float .ma-clear").count(), 1);
+    ["yellow", "magenta", "cyan", "green", "red", "clear"]);
+  assert.equal(await ui(page, ".ma-float .ma-swatch-clear").getAttribute("aria-label"), "Remove highlight");
+  assert.equal(await ui(page, ".ma-float .ma-dismiss").count(), 1);
+});
+
+test("✕ closes the toolbar and leaves the text selected", async () => {
+  await ui(page, ".ma-float .ma-dismiss").click();
+  assert.equal(await floatVisible(page), false);
+  assert.equal(await page.evaluate(() => getSelection().toString()), "A second");
+  assert.equal(await stored(page, "/book/index"), null, "nothing highlighted");
 });
 
 test("drag-select then a swatch highlights in one click", async () => {
@@ -80,15 +88,10 @@ test("highlights are restored after reload", async () => {
   assert.equal(h["myst-annotate-green"].length, 1);
 });
 
-test("✕ on a selection asks first; Cancel keeps, Delete removes overlapping highlights", async () => {
+test("the clear swatch removes overlapping highlights at once, with no dialog", async () => {
   await selectText(page, "#p1", 39, 41);
-  await ui(page, ".ma-float .ma-clear").click();
-  await confirmDialog(page, "Cancel");
-  assert.equal((await stored(page, "/book/index")).highlights.length, 3);
-
-  await selectText(page, "#p1", 39, 41);
-  await ui(page, ".ma-float .ma-clear").click();
-  await confirmDialog(page, "Delete");
+  await ui(page, ".ma-float .ma-swatch-clear").click();
+  assert.equal(await ui(page, ".ma-dialog").isVisible(), false);
   const h = await highlights(page);
   assert.ok(empty(h, "myst-annotate-magenta") && empty(h, "myst-annotate-yellow"));
   assert.equal((await stored(page, "/book/index")).highlights.length, 1);
@@ -129,9 +132,15 @@ test("clicking plain text opens nothing; clicking a highlight opens its toolbar 
   assert.ok(tip.y + tip.height <= box.top, "toolbar sits above the highlight");
 });
 
-test("✕ on a clicked highlight removes only that one (after confirming)", async () => {
-  await ui(page, ".ma-float .ma-clear").click();
-  await confirmDialog(page);
+test("✕ on a clicked highlight's toolbar just closes it", async () => {
+  await ui(page, ".ma-float .ma-dismiss").click();
+  assert.equal(await floatVisible(page), false);
+  assert.deepEqual(await texts(page, "/book/page2"), ["beta", "delta", "eta"]);
+});
+
+test("the clear swatch on a clicked highlight removes only that one", async () => {
+  await clickText(page, "#c1", 17, 22);
+  await ui(page, ".ma-float .ma-swatch-clear").click();
   assert.deepEqual(await texts(page, "/book/page2"), ["beta", "eta"]);
 });
 
@@ -161,8 +170,7 @@ test("stacked highlights: removing the top one reveals the one below", async () 
   assert.deepEqual(h["myst-annotate-magenta"], ["gamma delta"]);
 
   await clickText(page, "#c1", 17, 22);
-  await ui(page, ".ma-float .ma-clear").click();
-  await confirmDialog(page);
+  await ui(page, ".ma-float .ma-swatch-clear").click();
   h = await highlights(page);
   assert.deepEqual(h["myst-annotate-yellow"], ["beta gamma delta epsilon"]);
   assert.ok(empty(h, "myst-annotate-magenta"));

@@ -38,6 +38,7 @@ export const ICONS = {
   eye:      "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6z",
   eyeOff:   "M3 3l18 18 M10.6 5.1A10 10 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-3.2 3.9 M6.6 6.6C3.8 8.4 2 12 2 12s4 7 10 7a9.6 9.6 0 0 0 5.4-1.6 M9.9 9.9a3 3 0 0 0 4.2 4.2",
   note:     "M6 3h9l4 4v14H6z M14 3v5h5 M9 13h7 M9 17h5",
+  highlighter: "M15 4l5 5-8 8H7v-5z M7 12l-3 3v2h4 M4 21h16",
 };
 
 const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });

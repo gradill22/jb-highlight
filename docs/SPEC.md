@@ -7,10 +7,11 @@ Items marked **[proposed]** were suggested by Claude and approved as written.
 ## 1. Selection toolbar
 
 - Appears above the selected text, or below it when there's no room above (as today).
-- Layout: `[ ✎ Annotate | 🟡 🟣 🔵 🟢 🔴 | ✕ ]`. Every action is one click.
+- Layout: `[ ✎ Annotate | 🟡 🟣 🔵 🟢 🔴 ⊘ | ✕ ]`. Every action is one click.
   - **Annotate** creates an annotation on the selection (see §3).
   - **Swatches** highlight in that colour (current behaviour, including layering).
-  - **✕** removes **highlights only** under the selection. Annotations aren't affected.
+  - **⊘ clear swatch** (white circle, red slash; the last "colour") removes **highlights only** under the selection, with no confirmation. Annotations aren't affected.
+  - **✕** closes the toolbar and leaves the text selected.
 - Shortcuts while the toolbar is showing: **A** = annotate, **H** = highlight in the last colour used (yellow by default). They're ignored while focus is in a text field.
 
 ## 2. On-page marks
@@ -27,14 +28,16 @@ Items marked **[proposed]** were suggested by Claude and approved as written.
 - **Overlaps:** any number of annotations can cover the same text.
 - **Timestamps:** created time, plus "edited …" if changed later. Relative ("3 days ago"), with the full date on hover.
 - **Drafts:** unsaved text, including a new annotation that was never saved, is kept and comes back in edit mode next time.
-- **Deleting:** a styled in-page confirmation dialog (Cancel / Delete), in light and dark mode.
+- **Deleting:** a styled in-page confirmation dialog (Cancel / Delete), in light and dark mode. Removing a highlight never asks.
+- **Highlighting a note's text:** a highlighter icon next to Edit, on the sidebar card and in the popover, opens the 5 colours + ⊘ for the note's quoted text. Not shown for orphans or while editing.
 
 ## 4. Clicking marked text: popover
 
 - Clicking annotated or highlighted text opens a popover at that spot:
   - every annotation under the point, each with its rendered body, timestamps, **✎ Edit** and **🗑 Delete**;
-  - **[proposed]** a row of swatches + ✕ below them, only if a highlight is under the point;
-  - highlight only, no annotation: today's swatches + ✕ toolbar.
+  - **[proposed]** a row of swatches + ⊘ below them, only if a highlight is under the point;
+  - a **✕** in the popover's top-right corner closes it;
+  - highlight only, no annotation: the swatches + ⊘ toolbar, with ✕ to close it.
 - Clicking annotated text also opens the sidebar and marks those annotations' cards (auto-open).
 - **[proposed]** ✎ Edit in the popover opens that card in edit mode in the sidebar, so all editing happens in one place.
 
@@ -48,7 +51,7 @@ Items marked **[proposed]** were suggested by Claude and approved as written.
   - **search box**, which filters by note text and quoted text in the current tab and scope
   - **eye toggle** (show/hide marks)
 - **Annotations tab:** cards in document order, showing the quote, rendered body, timestamps, Edit and Delete. Clicking a card scrolls to its text and briefly flashes it.
-- **Highlights tab:** each highlight's quote with its colour, in document order. Click to scroll to it; delete with confirmation.
+- **Highlights tab:** each highlight's quote with its colour, in document order. Click to scroll to it; delete (no confirmation).
 - **Page notes tab:** a "New page note" button. Notes about the whole page, with the same editor, timestamps, drafts and delete as annotations, newest first.
 - **Orphans tab:** annotations whose text can't be found any more, after both the saved position and the text search fail. Shows the quote and body; they can be edited or deleted.
 - **Orphaned highlights** (text no longer found) are deleted from storage silently.

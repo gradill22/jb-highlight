@@ -34,12 +34,12 @@ const DOC_STYLES = `
 #${HOST_ID} {
   position: absolute; top: 0; left: 0; width: 0; height: 0; z-index: 1000;
   --ma-bg: #fff; --ma-fg: #1f2937; --ma-muted: #6b7280; --ma-border: rgba(0,0,0,.14);
-  --ma-surface: #f3f4f6; --ma-accent: #D97706; --ma-focus: #2563eb; --ma-danger: #dc2626;
+  --ma-surface: #f3f4f6; --ma-accent: #D97706; --ma-focus: #2563eb; --ma-danger: #dc2626; --ma-danger-hover: #b91c1c;
   --ma-shadow: 0 6px 20px rgba(0,0,0,.18);
 }
 .dark #${HOST_ID} {
   --ma-bg: #1f2937; --ma-fg: #e5e7eb; --ma-muted: #9ca3af; --ma-border: rgba(255,255,255,.16);
-  --ma-surface: #111827; --ma-accent: #FBBF24; --ma-focus: #60a5fa; --ma-danger: #f87171;
+  --ma-surface: #111827; --ma-accent: #FBBF24; --ma-focus: #60a5fa; --ma-danger: #dc2626; --ma-danger-hover: #b91c1c;
   --ma-shadow: 0 6px 20px rgba(0,0,0,.5);
 }
 ${COLORS.map(({ id, hex, fg }) =>
@@ -71,7 +71,7 @@ const visibleSegments = function (highlights) {
   return segments;
 };
 
-const LABELS = { highlights: "highlight", annotations: "annotation", pageNotes: "page note" };
+const LABELS = { annotations: "annotation", pageNotes: "page note" };
 
 const createApp = function (root) {
   injectDocStyles();
@@ -162,9 +162,10 @@ const createApp = function (root) {
     store.saveSettings(app.settings);
   };
 
-  app.highlight = function (sel, color) {
+  /** Highlight a text range ({ start, end, text }) on this page or, from the book view, another one. */
+  app.highlight = function (sel, color, path = app.path) {
     rememberColor(color);
-    mutate(app.path, (page) => {
+    mutate(path, (page) => {
       // The new highlight goes on top; older ones it fully covers would never show again.
       page.highlights = page.highlights.filter((i) => i.start < sel.start || i.end > sel.end);
       page.highlights.push({ id: store.newId(), start: sel.start, end: sel.end, text: sel.text, color });
@@ -176,13 +177,10 @@ const createApp = function (root) {
     mutate(app.path, () => { item.color = color; });
   };
 
-  /** Remove (after confirmation) every highlight overlapping the selection. */
-  app.removeHighlightsIn = async function (sel) {
-    const overlaps = (i) => i.start < sel.end && i.end > sel.start;
-    const count = app.page.highlights.filter(overlaps).length;
-    if (!count) return;
-    const ok = await dialog.confirm(count === 1 ? "Delete this highlight?" : `Delete these ${count} highlights?`);
-    if (ok) mutate(app.path, (page) => { page.highlights = page.highlights.filter((i) => !overlaps(i)); });
+  /** Remove every highlight overlapping a text range. */
+  app.clearHighlights = function (range, path = app.path) {
+    const overlaps = (i) => i.start < range.end && i.end > range.start;
+    mutate(path, (page) => { page.highlights = page.highlights.filter((i) => !overlaps(i)); });
   };
 
   // ── Notes (annotations and page notes) ──
@@ -239,8 +237,9 @@ const createApp = function (root) {
     });
   };
 
+  /** Delete an item. Notes ask for confirmation first; highlights are removed at once. */
   app.removeItem = async function (path, kind, id) {
-    if (!(await dialog.confirm(`Delete this ${LABELS[kind]}?`))) return;
+    if (kind !== "highlights" && !(await dialog.confirm(`Delete this ${LABELS[kind]}?`))) return;
     mutate(path, (page) => { page[kind] = page[kind].filter((i) => i.id !== id); });
   };
 
@@ -289,7 +288,7 @@ const createApp = function (root) {
 
   app.annotateSelection  = () => { const sel = takeSelection(); if (sel) app.annotate(sel); };
   app.highlightSelection = (color) => { const sel = takeSelection(); if (sel) app.highlight(sel, color); };
-  app.clearSelection     = () => { const sel = takeSelection(); if (sel) app.removeHighlightsIn(sel); };
+  app.clearSelection     = () => { const sel = takeSelection(); if (sel) app.clearHighlights(sel); };
 
   // ── UI ──
 

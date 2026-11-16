@@ -4,10 +4,11 @@ Private, local highlighting and annotation for [Jupyter Book 2](https://jupyterb
 
 ## What readers can do
 
-- **Highlight:** select text and pick one of five colours from the toolbar. Highlights can overlap: a new one is drawn on top, and removing it shows the one underneath again.
+- **Highlight:** select text and pick one of five colours from the toolbar. The last swatch, a white circle with a red slash, clears highlights from the selection. **✕** closes the toolbar and leaves the text selected. Highlights can overlap: a new one is drawn on top, and removing it shows the one underneath again.
 - **Annotate:** select text and choose **Annotate**. The sidebar opens with a new note. Notes support Markdown and LaTeX math (`$…$` and `$$…$$`), with a Write/Preview toggle. Annotated text gets a dotted amber underline.
 - **Page notes:** notes about the whole page, written from the sidebar.
-- **Click marked text** to bring up a popover for the notes under that point, with Edit and Delete. If the text is highlighted, the popover also lets you recolour or remove the highlight.
+- **Click marked text** to bring up a popover for the notes under that point, with Highlight, Edit and Delete. If the text is highlighted, the popover also lets you recolour or remove the highlight.
+- **Highlight a note's text:** the highlighter icon next to Edit, on a note's sidebar card or in its popover, opens the colour swatches for that note's quoted text.
 - **Sidebar:** opened from the tab on the right edge or with **Alt/⌥+Shift+A**. It has these parts:
   - tabs for Annotations, Highlights, Page notes and Orphans (notes whose text is no longer on the page)
   - a **This page / Whole book** switch
@@ -15,7 +16,7 @@ Private, local highlighting and annotation for [Jupyter Book 2](https://jupyterb
   - an eye button that hides or shows every mark
 - **Keyboard:** with text selected, **A** annotates and **H** highlights in the colour you used last.
 - **Drafts:** unsaved notes are kept and come back the next time you open the page.
-- Deleting anything asks for confirmation first. The UI follows the theme's light and dark modes, and on narrow screens the sidebar covers the full width.
+- Deleting a note asks for confirmation first. Removing a highlight doesn't. The UI follows the theme's light and dark modes, and on narrow screens the sidebar covers the full width.
 
 ## Installation
 

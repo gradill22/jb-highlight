@@ -139,7 +139,8 @@ describe("clicking annotated text", () => {
   });
 
   test("the highlight under the point gets a swatch row that recolours it", async () => {
-    assert.equal(await ui(page, ".ma-float .ma-pop-hl .ma-swatch").count(), 5);
+    assert.deepEqual(await ui(page, ".ma-float .ma-pop-hl .ma-swatch").evaluateAll((els) => els.map((e) => e.dataset.color)),
+      ["yellow", "magenta", "cyan", "green", "red", "clear"]);
     await ui(page, '.ma-float .ma-pop-hl .ma-swatch[data-color="cyan"]').click();
     assert.equal((await stored(page, "/book/index")).highlights[0].color, "cyan");
     const h = await highlights(page);
@@ -153,7 +154,43 @@ describe("clicking annotated text", () => {
     assert.equal(await ui(page, ".ma-float .ma-pop-hl").count(), 0);
   });
 
+  test("✕ in the popover's corner closes it", async () => {
+    await clickText(page, "#p1", 12, 14);
+    assert.ok(await floatVisible(page));
+    const pop = await ui(page, ".ma-float").boundingBox();
+    const x = await ui(page, ".ma-float > .ma-dismiss").boundingBox();
+    assert.ok(x.x + x.width > pop.x + pop.width - 40 && x.y < pop.y + 20, "top-right corner");
+    await ui(page, ".ma-float > .ma-dismiss").click();
+    assert.equal(await floatVisible(page), false);
+    assert.equal((await notes(page)).length, 2, "nothing deleted");
+  });
+
+  test("the highlighter in a popover note highlights that note's text", async () => {
+    await clickText(page, "#p1", 12, 14); // n1: "gamma delta"
+    const note = ui(page, ".ma-float .ma-pop-note");
+    const actions = await note.locator(".ma-pop-foot button").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
+    assert.deepEqual(actions, ["Highlight", "Edit", "Delete"], "highlighter sits next to Edit");
+    assert.equal(await note.locator(".ma-picker").isVisible(), false);
+    await note.getByRole("button", { name: "Highlight", exact: true }).click();
+    assert.deepEqual(await note.locator(".ma-picker .ma-swatch").evaluateAll((els) => els.map((e) => e.dataset.color)),
+      ["yellow", "magenta", "cyan", "green", "red", "clear"]);
+    await note.locator('.ma-picker .ma-swatch[data-color="magenta"]').click();
+    assert.equal(await floatVisible(page), false);
+    const h = await highlights(page);
+    assert.deepEqual(h["myst-annotate-magenta"], ["gamma delta"], "covers the note's text, on top");
+    assert.equal((await stored(page, "/book/index")).highlights.length, 1, "the older 'delta' highlight is fully covered and replaced");
+  });
+
+  test("the clear swatch in a note's picker removes highlights on its text", async () => {
+    await clickText(page, "#p1", 12, 14);
+    await ui(page, ".ma-float .ma-pop-note").getByRole("button", { name: "Highlight", exact: true }).click();
+    await ui(page, ".ma-float .ma-pop-note .ma-picker .ma-swatch-clear").click();
+    assert.equal(await ui(page, ".ma-dialog").isVisible(), false);
+    assert.deepEqual((await stored(page, "/book/index")).highlights, []);
+  });
+
   test("Edit in the popover opens the card editor in the sidebar", async () => {
+    await clickText(page, "#p1", 12, 14);
     await ui(page, ".ma-float .ma-pop-note").getByRole("button", { name: "Edit" }).click();
     assert.equal(await floatVisible(page), false);
     const textarea = card(page, "n1").locator("textarea");
@@ -278,6 +315,94 @@ describe("sidebar tabs, search, orphans and book view", () => {
   test("no page errors", () => assert.deepEqual(page.errors, []));
 });
 
+describe("highlighting from sidebar cards, and the Delete button", () => {
+  let page;
+  before(async () => {
+    page = await newPage(browser, { pages: PAGES });
+    await page.open("/book/index");
+    const t = Date.now();
+    await seed(page, "/book/index", {
+      title: "Page One",
+      annotations: [
+        { id: "a", start: H1 + 6, end: H1 + 16, text: "beta gamma", body: "note a", created: t },
+        { id: "o", start: 0, end: 3, text: "Not on the page", body: "orphan", created: t },
+        { id: "e", start: H1 + 23, end: H1 + 30, text: "epsilon", body: "being edited", draft: "being edited", created: t },
+      ],
+    });
+    await seed(page, "/book/page2", {
+      title: "Page Two",
+      annotations: [{ id: "q", start: 8 + 6, end: 8 + 11, text: "ipsum", body: "on page two", created: t }],
+    });
+    await reload(page);
+    await ui(page, ".ma-edge").click();
+  });
+
+  test("a card's highlighter sits next to Edit and opens the colour picker", async () => {
+    const actions = await card(page, "a").locator(".ma-card-foot button").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
+    assert.deepEqual(actions, ["Highlight", "Edit", "Delete"]);
+    await card(page, "a").getByRole("button", { name: "Highlight", exact: true }).click();
+    assert.equal(await card(page, "a").getByRole("button", { name: "Highlight", exact: true }).getAttribute("aria-expanded"), "true");
+    await card(page, "a").locator('.ma-picker .ma-swatch[data-color="green"]').click();
+    assert.deepEqual((await highlights(page))["myst-annotate-green"], ["beta gamma"]);
+    assert.deepEqual((await stored(page, "/book/index")).highlights.map((h) => h.text), ["beta gamma"]);
+  });
+
+  test("the clear swatch in a card's picker removes it, with no dialog", async () => {
+    await card(page, "a").getByRole("button", { name: "Highlight", exact: true }).click();
+    await card(page, "a").locator(".ma-picker .ma-swatch-clear").click();
+    assert.equal(await ui(page, ".ma-dialog").isVisible(), false);
+    assert.deepEqual((await stored(page, "/book/index")).highlights, []);
+  });
+
+  test("orphaned and in-progress notes have no highlighter", async () => {
+    assert.equal(await card(page, "e").getByRole("button", { name: "Highlight", exact: true }).count(), 0);
+    await ui(page, '.ma-tab[data-tab="orphans"]').click();
+    assert.equal(await card(page, "o").getByRole("button", { name: "Highlight", exact: true }).count(), 0);
+    assert.equal(await card(page, "o").getByRole("button", { name: "Edit" }).count(), 1);
+  });
+
+  test("in the Whole book view, another page's note can be highlighted", async () => {
+    await ui(page, '.ma-tab[data-tab="annotations"]').click();
+    await ui(page, '.ma-seg[data-scope="book"]').click();
+    await card(page, "q").getByRole("button", { name: "Highlight", exact: true }).click();
+    await card(page, "q").locator('.ma-picker .ma-swatch[data-color="cyan"]').click();
+    assert.deepEqual((await stored(page, "/book/page2")).highlights.map((h) => [h.text, h.color]), [["ipsum", "cyan"]]);
+    assert.equal(page.url().endsWith("/book/index"), true, "stayed on this page");
+  });
+
+  test("the trash button on a highlight in the sidebar removes it with no dialog", async () => {
+    await ui(page, '.ma-seg[data-scope="page"]').click();
+    await selectText(page, "#p2", 0, 6);
+    await ui(page, '.ma-float .ma-swatch[data-color="yellow"]').click();
+    await ui(page, '.ma-tab[data-tab="highlights"]').click();
+    await ui(page, ".ma-list .ma-hl-row").getByRole("button", { name: "Delete highlight" }).click();
+    assert.equal(await ui(page, ".ma-dialog").isVisible(), false);
+    assert.deepEqual((await stored(page, "/book/index")).highlights, []);
+  });
+
+  for (const theme of ["light", "dark"]) {
+    test(`hovering Delete in the dialog darkens the red; the label stays readable (${theme})`, async () => {
+      await page.evaluate((dark) => document.documentElement.classList.toggle("dark", dark), theme === "dark");
+      await ui(page, '.ma-tab[data-tab="annotations"]').click();
+      await card(page, "a").getByRole("button", { name: "Delete" }).click();
+      const del = ui(page, ".ma-dialog").getByRole("button", { name: "Delete" });
+      await del.waitFor();
+      const style = () => del.evaluate((el) => { const s = getComputedStyle(el); return { bg: s.backgroundColor, fg: s.color }; });
+      const rest = await style();
+      await del.hover();
+      const hover = await style();
+      assert.equal(rest.bg, "rgb(220, 38, 38)");
+      assert.equal(hover.bg, "rgb(185, 28, 28)", "darker red on hover");
+      assert.equal(hover.fg, "rgb(255, 255, 255)");
+      assert.notEqual(hover.bg, hover.fg);
+      await confirmDialog(page, "Cancel");
+      assert.equal((await notes(page)).length, 3);
+    });
+  }
+
+  test("no page errors", () => assert.deepEqual(page.errors, []));
+});
+
 describe("show/hide and keyboard shortcuts", () => {
   let page;
   before(async () => {
@@ -309,7 +434,7 @@ describe("show/hide and keyboard shortcuts", () => {
 
   test("H highlights the selection in the last colour used", async () => {
     await selectText(page, "#p2", 0, 6);
-    await ui(page, '.ma-swatch[data-color="magenta"]').click();
+    await ui(page, '.ma-float .ma-swatch[data-color="magenta"]').click();
     await selectText(page, "#p2", 7, 16);
     await page.keyboard.press("h");
     const h = await highlights(page);

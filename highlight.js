@@ -114,7 +114,8 @@ const render = function ({ el }) {
   const root = (host && host.closest("article")) || document.body;
   const storageKey = STORAGE_KEY_PREFIX + location.pathname;
 
-  let items = [];   // [{ start, end, color, text }]
+  let items = [];   // [{ start, end, color, text }], later items are drawn on top
+  let painted = []; // [{ item, range }] for the visible piece of each highlight
   let activeItem = null; // saved highlight the tooltip acts on after it is clicked
 
   // ── Persistence ──
@@ -141,11 +142,30 @@ const render = function ({ el }) {
     COLORS.forEach(({ id }) => CSS.highlights.delete(HIGHLIGHT_PREFIX + id));
   };
 
+  /** Split overlapping highlights into pieces, each owned by the topmost (latest) highlight. */
+  const visibleSegments = function () {
+    const found = items.filter((item) => locate(root, item));
+    const cuts = [...new Set(found.flatMap((i) => [i.start, i.end]))].sort((a, b) => a - b);
+    const segments = [];
+    for (let k = 0; k < cuts.length - 1; k++) {
+      const start = cuts[k];
+      const end   = cuts[k + 1];
+      const item  = found.findLast((i) => i.start <= start && i.end >= end);
+      if (!item) continue;
+      const prev = segments[segments.length - 1];
+      if (prev && prev.item === item && prev.end === start) prev.end = end;
+      else segments.push({ start, end, item });
+    }
+    return segments;
+  };
+
   const paint = function () {
     clearPaint();
-    items.forEach((item) => {
-      const range = locate(root, item);
+    painted = [];
+    visibleSegments().forEach(({ start, end, item }) => {
+      const range = rangeFromOffsets(root, start, end);
       if (!range) return;
+      painted.push({ item, range });
       const name = HIGHLIGHT_PREFIX + item.color;
       if (!CSS.highlights.has(name)) CSS.highlights.set(name, new Highlight());
       CSS.highlights.get(name).add(range);
@@ -181,7 +201,8 @@ const render = function ({ el }) {
     }
     const sel = selectionOffsets();
     if (!sel) return;
-    removeOverlapping(sel); // re-colouring replaces the old highlight
+    // The new highlight goes on top; older ones it fully covers would never show again.
+    items = items.filter((item) => item.start < sel.start || item.end > sel.end);
     items.push({ ...sel, color: colorId });
     window.getSelection().removeAllRanges();
     save();
@@ -249,22 +270,23 @@ const render = function ({ el }) {
 
   const tooltip = buildTooltip();
 
-  const showTooltip = function (x, y) {
+  /** Show the tooltip centred on x, above `top`, or below `bottom` if there is no room above. */
+  const showTooltip = function (x, top, bottom) {
     tooltip.style.display = "flex";
 
-    // Position above the selection midpoint; clamp to viewport
     const tw = tooltip.offsetWidth  || 200;
     const th = tooltip.offsetHeight || 40;
     const margin = 8;
 
     let left = x - tw / 2;
-    let top  = y - th - margin;
+    let y    = top - th - margin;
+    if (y < margin) y = Math.min(bottom + margin, window.innerHeight - th - margin);
 
     left = Math.max(margin, Math.min(left, window.innerWidth - tw - margin));
-    top  = Math.max(margin, top);
+    y    = Math.max(margin, y);
 
     tooltip.style.left = `${left + window.scrollX}px`;
-    tooltip.style.top  = `${top  + window.scrollY}px`;
+    tooltip.style.top  = `${y    + window.scrollY}px`;
   };
 
   const hideTooltip = function () {
@@ -272,11 +294,9 @@ const render = function ({ el }) {
     activeItem = null;
   };
 
-  /** The saved highlight (and its line box) under viewport point (x, y), if any. */
+  /** The visible highlight (and its line box) under viewport point (x, y), if any. */
   const highlightAt = function (x, y) {
-    for (const item of items) {
-      const range = locate(root, item);
-      if (!range) continue;
+    for (const { item, range } of painted) {
       for (const rect of range.getClientRects()) {
         if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
           return { item, rect };
@@ -300,7 +320,7 @@ const render = function ({ el }) {
 
     const rect = sel.getRangeAt(0).getBoundingClientRect();
     if (!rect.width) return;
-    showTooltip(rect.left + rect.width / 2, rect.top);
+    showTooltip(rect.left + rect.width / 2, rect.top, rect.bottom);
   };
 
   const onMousedown = function (e) {
@@ -316,7 +336,7 @@ const render = function ({ el }) {
     const hit = highlightAt(e.clientX, e.clientY);
     if (!hit) return;
     activeItem = hit.item;
-    showTooltip(hit.rect.left + hit.rect.width / 2, hit.rect.top);
+    showTooltip(hit.rect.left + hit.rect.width / 2, hit.rect.top, hit.rect.bottom);
   };
 
   // ── Init ──

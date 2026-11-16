@@ -2,7 +2,9 @@
 
 A [Jupyter Book 2](https://jupyterbook.org) / [MyST](https://mystmd.org) plugin that lets readers highlight text on any page in one of five colors.
 
-Select text inside a page and a small toolbar appears. Pick a color to highlight the selection, or pick **✕** to remove highlights under it. Click an existing highlight to bring the toolbar back for it: pick **✕** to remove it or a color to recolor it. Highlights are saved in the reader's browser (`localStorage`, one entry per page) and come back when the page is opened again.
+Select text inside a page and a small toolbar appears. Pick a color to highlight the selection, or pick **✕** to remove highlights under it. Click an existing highlight to bring the toolbar back for it: pick **✕** to remove it or a color to recolor it.
+
+Highlights can be layered: a new highlight is drawn on top of any it overlaps, and removing it shows the one underneath again. A new highlight that completely covers an older one replaces it. Highlights are saved in the reader's browser (`localStorage`, one entry per page) and come back when the page is opened again.
 
 ## Installation
 

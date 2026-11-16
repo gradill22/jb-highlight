@@ -1,3 +1,7 @@
 node_modules/
 dist/
 *.tgz
+.idea/
+.vscode/
+.venv/
+*.env

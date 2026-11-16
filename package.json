@@ -1,22 +1,28 @@
 {
-  "name": "jb-highlight",
+  "name": "myst-annotate",
   "version": "0.1.0",
-  "description": "Jupyter Book 2 / MyST plugin that lets readers highlight page text in a choice of colors.",
+  "description": "Local, private highlighting and annotation (Markdown + math) for Jupyter Book 2 / MyST sites.",
   "type": "module",
-  "main": "./inject-highlight.mjs",
+  "main": "./dist/myst-annotate.mjs",
   "exports": {
-    ".": "./inject-highlight.mjs",
-    "./highlight.js": "./highlight.js"
+    ".": "./dist/myst-annotate.mjs",
+    "./widget.js": "./dist/widget.js"
   },
   "files": [
-    "inject-highlight.mjs",
-    "highlight.js"
+    "dist"
   ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "npm run build && node --test \"test/*.test.mjs\"",
+    "prepack": "npm run build"
+  },
   "keywords": [
     "jupyter-book",
     "mystmd",
     "myst-plugin",
+    "annotation",
     "highlight",
+    "hypothesis",
     "anywidget"
   ],
   "author": "Grady Dillon",
@@ -27,5 +33,12 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "jupyter-book": "2.1.7",
+    "katex": "0.19.1",
+    "markdown-it": "15.0.3",
+    "playwright": "1.63.0"
   }
 }

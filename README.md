@@ -82,6 +82,8 @@ npm run build   # writes dist/
 npm test        # builds, then runs the plugin, Markdown and browser (Playwright) tests
 ```
 
+[CI](.github/workflows/ci.yml) runs `npm test` for every pull request and every push to `main`, on Linux and Windows with Node 22 and 24.
+
 On npm 12, `npm install` warns that `esbuild`'s install script was blocked because it isn't covered by `allowScripts`. The build doesn't need that script: esbuild's JavaScript API finds its native binary on its own, so the warning is safe to ignore.
 
 `docs/SPEC.md` is the approved feature specification.

@@ -41,15 +41,17 @@ npm install github:gradill22/myst-annotate
 
 Then use the same `node_modules/...` path as above.
 
-**From a URL:** MyST downloads plugins listed as URLs. The URL must serve the JavaScript file itself, for example from a CDN that mirrors npm:
+**From a URL:** MyST downloads plugins listed as URLs. The URL must serve the JavaScript file itself. Every GitHub release has the plugin attached:
 
 ```yaml
 project:
   plugins:
-    - https://cdn.jsdelivr.net/npm/myst-annotate@0.1.0/dist/myst-annotate.mjs
+    - https://github.com/gradill22/myst-annotate/releases/download/v0.1.0/myst-annotate.mjs
 ```
 
-> **`Error reading plugin: SyntaxError: Unexpected token '<'`** means the URL returned a web page (HTML), not JavaScript. A `github.com/…/blob/…` link does this, for example. The built plugin isn't committed to the repository, so use the npm, GitHub-install or CDN options above.
+A CDN that mirrors npm works too, for example `https://cdn.jsdelivr.net/npm/myst-annotate@0.1.0/dist/myst-annotate.mjs`. Pinning a version keeps your book from changing unexpectedly. MyST keeps a downloaded plugin for up to 30 minutes before fetching it again.
+
+> **`Error reading plugin: SyntaxError: Unexpected token '<'`** means the URL returned a web page (HTML), not JavaScript. A `github.com/…/blob/…` link does this, for example. The built plugin isn't committed to the repository, so use one of the options above.
 
 Build as usual (`jupyter-book build --html` or `jupyter-book start`). The log should include:
 
@@ -77,6 +79,21 @@ npm test        # builds, then runs the plugin, Markdown and browser (Playwright
 ```
 
 `docs/SPEC.md` is the approved feature specification.
+
+### Releasing
+
+1. Set the new version in `package.json` (for example with `npm version patch`, which also commits and tags it) and push to `main`.
+2. Publish a GitHub release whose tag is `v` plus that version, for example `v0.1.1`.
+
+The [release workflow](.github/workflows/release.yml) then runs the tests and attaches `myst-annotate.mjs` to the release. It also publishes the package to npm through [trusted publishing](https://docs.npmjs.com/trusted-publishers), so no npm token is stored in GitHub. The workflow fails if the tag doesn't match `package.json`, and it skips the npm step for versions that are already published.
+
+Trusted publishing only works once the package exists on npm and is linked to this repository. The first version is published by hand:
+
+```bash
+npm login
+npm publish
+npx npm@11.21.1 trust github myst-annotate --file release.yml --repo gradill22/myst-annotate --allow-publish
+```
 
 ## License
 

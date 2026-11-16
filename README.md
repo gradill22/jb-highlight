@@ -53,7 +53,23 @@ project:
     - https://github.com/gradill22/myst-annotate/releases/download/v0.1.0/myst-annotate.mjs
 ```
 
-A CDN that mirrors npm works too, for example `https://cdn.jsdelivr.net/npm/myst-annotate@0.1.0/dist/myst-annotate.mjs`. Pinning a version keeps your book from changing unexpectedly. MyST keeps a downloaded plugin for up to 30 minutes before fetching it again.
+A CDN that mirrors npm works too, for example `https://cdn.jsdelivr.net/npm/myst-annotate@0.1.0/dist/myst-annotate.mjs`.
+
+To always use the newest release instead of a pinned version, use the `latest` URL:
+
+```yaml
+project:
+  plugins:
+    - https://github.com/gradill22/myst-annotate/releases/latest/download/myst-annotate.mjs
+```
+
+MyST saves a downloaded plugin in `_build/cache/` and reuses it for **30 days**, so a new release isn't picked up until then. To fetch the newest release right away, run:
+
+```bash
+jupyter-book clean --cache
+```
+
+A build that starts without a `_build/` folder, such as a fresh CI checkout, always downloads the newest release. Pinning a version instead keeps your book from changing unexpectedly.
 
 > **`Error reading plugin: SyntaxError: Unexpected token '<'`** means the URL returned a web page (HTML), not JavaScript. A `github.com/…/blob/…` link does this, for example. The built plugin isn't committed to the repository, so use one of the options above.
 

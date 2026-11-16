@@ -1,0 +1,31 @@
+{
+  "name": "jb-highlight",
+  "version": "0.1.0",
+  "description": "Jupyter Book 2 / MyST plugin that lets readers highlight page text in a choice of colors.",
+  "type": "module",
+  "main": "./inject-highlight.mjs",
+  "exports": {
+    ".": "./inject-highlight.mjs",
+    "./highlight.js": "./highlight.js"
+  },
+  "files": [
+    "inject-highlight.mjs",
+    "highlight.js"
+  ],
+  "keywords": [
+    "jupyter-book",
+    "mystmd",
+    "myst-plugin",
+    "highlight",
+    "anywidget"
+  ],
+  "author": "Grady Dillon",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gradill22/jb-highlight.git"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

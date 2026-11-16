@@ -37,10 +37,13 @@ project:
 **From GitHub**, without going through npm. The plugin is built during the install:
 
 ```bash
-npm install github:gradill22/myst-annotate
+npm install --allow-git=root github:gradill22/myst-annotate
 ```
 
 Then use the same `node_modules/...` path as above.
+
+- **Why `--allow-git=root`:** npm 12 refuses dependencies fetched from git unless you allow them (the error is `EALLOWGIT`). `--allow-git=root` allows only the git dependencies listed in your own `package.json`. To skip the flag on later installs, put `allow-git=root` in the project's `.npmrc`. npm 11 and earlier don't need it.
+- **Safe to ignore:** npm 12 may also warn that `myst-annotate`'s `prepare` script was blocked. npm has already built the plugin while preparing the git package, so the installed plugin is complete.
 
 **From a URL:** MyST downloads plugins listed as URLs. The URL must serve the JavaScript file itself. Every GitHub release has the plugin attached:
 
@@ -78,6 +81,8 @@ npm install
 npm run build   # writes dist/
 npm test        # builds, then runs the plugin, Markdown and browser (Playwright) tests
 ```
+
+On npm 12, `npm install` warns that `esbuild`'s install script was blocked because it isn't covered by `allowScripts`. The build doesn't need that script: esbuild's JavaScript API finds its native binary on its own, so the warning is safe to ignore.
 
 `docs/SPEC.md` is the approved feature specification.
 

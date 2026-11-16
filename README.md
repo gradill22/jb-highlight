@@ -19,19 +19,37 @@ Private, local highlighting and annotation for [Jupyter Book 2](https://jupyterb
 
 ## Installation
 
-From the folder that contains your `myst.yml`:
+The plugin is a single file, `myst-annotate.mjs`. List it under `project.plugins` in your `myst.yml`, using one of the options below.
+
+**From npm:** run this in the folder that contains your `myst.yml`:
 
 ```bash
 npm install myst-annotate
 ```
-
-Then register the plugin in `myst.yml`:
 
 ```yaml
 project:
   plugins:
     - node_modules/myst-annotate/dist/myst-annotate.mjs
 ```
+
+**From GitHub**, without going through npm. The plugin is built during the install:
+
+```bash
+npm install github:gradill22/myst-annotate
+```
+
+Then use the same `node_modules/...` path as above.
+
+**From a URL:** MyST downloads plugins listed as URLs. The URL must serve the JavaScript file itself, for example from a CDN that mirrors npm:
+
+```yaml
+project:
+  plugins:
+    - https://cdn.jsdelivr.net/npm/myst-annotate@0.1.0/dist/myst-annotate.mjs
+```
+
+> **`Error reading plugin: SyntaxError: Unexpected token '<'`** means the URL returned a web page (HTML), not JavaScript. A `github.com/…/blob/…` link does this, for example. The built plugin isn't committed to the repository, so use the npm, GitHub-install or CDN options above.
 
 Build as usual (`jupyter-book build --html` or `jupyter-book start`). The log should include:
 
@@ -41,8 +59,8 @@ Build as usual (`jupyter-book build --html` or `jupyter-book start`). The log sh
 
 ## How it works
 
-- `myst-annotate.mjs` is a MyST transform plugin. It adds an `anywidget` node to the end of every page, pointing at `widget.js`. MyST copies the widget into the site build and the theme loads it in the browser.
-- `widget.js` bundles everything it needs, including markdown-it, KaTeX and the KaTeX fonts, so a built book needs no network access. It is about 750 KB, or about 400 KB gzipped, and the browser caches it after the first page.
+- `myst-annotate.mjs` is a MyST transform plugin. It adds an `anywidget` node to the end of every page. The browser widget is embedded in the plugin. When the plugin loads, it writes the widget next to itself as `myst-annotate-widget-<hash>.js`. MyST copies that file into the site build, and the theme loads it in the browser.
+- The widget bundles everything it needs, including markdown-it, KaTeX and the KaTeX fonts, so a built book needs no network access. It is about 750 KB, or about 400 KB gzipped, and the browser caches it after the first page.
 - Marks are drawn with the [CSS Custom Highlight API](https://developer.mozilla.org/en-US/docs/Web/API/CSS_Custom_Highlight_API), so the page's HTML is never modified. The UI lives in a shadow root, so the theme's styles don't affect it.
 - Data is kept in `localStorage`, one entry per page (`myst-annotate:<path>`). Marks are anchored by character position within the page's `<article>`, with a fallback that searches for the quoted text if the page has changed.
 

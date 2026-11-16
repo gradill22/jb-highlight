@@ -1,4 +1,4 @@
-// Build dist/: the MyST plugin and the bundled browser widget (markdown-it + KaTeX included).
+// Build dist/: the MyST plugin, with the bundled browser widget (markdown-it + KaTeX) embedded in it.
 import { build } from "esbuild";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -54,7 +54,28 @@ await build({
   logLevel: "warning",
 });
 
-await fs.copyFile(path.join(root, "src/plugin.mjs"), path.join(dist, "myst-annotate.mjs"));
+// The plugin embeds the widget, so a single file is all a book needs (see src/plugin.mjs).
+// dist/widget.js is kept for the browser tests; it is not published.
+const widgetSource = await fs.readFile(path.join(dist, "widget.js"), "utf8");
+await build({
+  entryPoints: [path.join(root, "src/plugin.mjs")],
+  outfile: path.join(dist, "myst-annotate.mjs"),
+  bundle: true,
+  format: "esm",
+  platform: "node",
+  target: "node18",
+  plugins: [{
+    name: "widget-source",
+    setup(b) {
+      b.onResolve({ filter: /^virtual:widget-source$/ }, (args) => ({ path: args.path, namespace: "widget-source" }));
+      b.onLoad({ filter: /.*/, namespace: "widget-source" }, () => ({
+        contents: `export default ${JSON.stringify(widgetSource)};`,
+        loader: "js",
+      }));
+    },
+  }],
+  logLevel: "warning",
+});
 
-const { size } = await fs.stat(path.join(dist, "widget.js"));
-console.log(`dist/myst-annotate.mjs, dist/widget.js (${(size / 1024).toFixed(0)} KB)`);
+const { size } = await fs.stat(path.join(dist, "myst-annotate.mjs"));
+console.log(`dist/myst-annotate.mjs (${(size / 1024).toFixed(0)} KB, widget included)`);

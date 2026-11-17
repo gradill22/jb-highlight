@@ -44,7 +44,7 @@ await fs.mkdir(dist);
 
 await build({
   entryPoints: [path.join(root, "src/widget/index.js")],
-  outfile: path.join(dist, "widget.js"),
+  outfile: path.join(dist, "myst-annotate-widget.js"),
   bundle: true,
   format: "esm",
   minify: true,
@@ -55,8 +55,9 @@ await build({
 });
 
 // The plugin embeds the widget, so a single file is all a book needs (see src/plugin.mjs).
-// dist/widget.js is kept for the browser tests; it is not published.
-const widgetSource = await fs.readFile(path.join(dist, "widget.js"), "utf8");
+// dist/myst-annotate-widget.js is also attached to GitHub releases, for embedding the widget
+// on chosen pages with the anywidget directive (and the browser tests use it).
+const widgetSource = await fs.readFile(path.join(dist, "myst-annotate-widget.js"), "utf8");
 await build({
   entryPoints: [path.join(root, "src/plugin.mjs")],
   outfile: path.join(dist, "myst-annotate.mjs"),

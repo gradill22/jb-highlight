@@ -1,9 +1,9 @@
-// Test harness: serves dist/widget.js on a fake origin and mounts it the way
+// Test harness: serves dist/myst-annotate-widget.js on a fake origin and mounts it the way
 // @myst-theme/anywidget's AnyWidgetRenderer does (shadow root inside the <article>).
 import { readFileSync } from "node:fs";
 import { chromium } from "playwright";
 
-const WIDGET = readFileSync(new URL("../dist/widget.js", import.meta.url), "utf8");
+const WIDGET = readFileSync(new URL("../dist/myst-annotate-widget.js", import.meta.url), "utf8");
 export const ORIGIN = "http://book.test";
 export const SECURE_ORIGIN = "https://book.test";
 

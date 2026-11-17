@@ -81,6 +81,15 @@ A build that starts without a `_build/` folder, such as a fresh CI checkout, alw
 
 > **`Error reading plugin: SyntaxError: Unexpected token '<'`** means the URL returned a web page (HTML), not JavaScript. A `github.com/…/blob/…` link does this, for example. The built plugin isn't committed to the repository, so use one of the options above.
 
+**Only on some pages:** listing the plugin in `myst.yml` adds it to every page. To add it to chosen pages instead, leave it out of `project.plugins` and embed the widget on each of those pages with MyST's `anywidget` directive:
+
+````markdown
+```{anywidget} https://github.com/gradill22/myst-annotate/releases/download/v0.2.1/myst-annotate-widget.js
+```
+````
+
+Every release since v0.2.1 has `myst-annotate-widget.js` attached. MyST downloads it at build time and copies it into your site, so readers' browsers never contact GitHub. You can also download the file into your book and give its path relative to the page instead of the URL. Use one approach per page: if a page has the directive and the plugin is also listed in `myst.yml`, only one copy runs.
+
 Build as usual (`jupyter-book build --html` or `jupyter-book start`). The log should include:
 
 ```
@@ -117,7 +126,7 @@ On npm 12, `npm install` warns that `esbuild`'s install script was blocked becau
 1. Set the new version in `package.json` (for example with `npm version patch`, which also commits and tags it) and push to `main`.
 2. Publish a GitHub release whose tag is `v` plus that version, for example `v0.1.1`.
 
-The [release workflow](.github/workflows/release.yml) then runs the tests and attaches `myst-annotate.mjs` to the release. It also publishes the package to npm through [trusted publishing](https://docs.npmjs.com/trusted-publishers), so no npm token is stored in GitHub. The workflow fails if the tag doesn't match `package.json`, and it skips the npm step for versions that are already published.
+The [release workflow](.github/workflows/release.yml) then runs the tests and attaches `myst-annotate.mjs` and `myst-annotate-widget.js` to the release. It also publishes the package to npm through [trusted publishing](https://docs.npmjs.com/trusted-publishers), so no npm token is stored in GitHub. The workflow fails if the tag doesn't match `package.json`, and it skips the npm step for versions that are already published.
 
 Trusted publishing only works once the package exists on npm and is linked to this repository. The first version is published by hand:
 

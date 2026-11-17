@@ -52,7 +52,7 @@ const buildAndCheck = async function (pluginEntry) {
     const widgets = assets.filter((f) => /^myst-annotate-widget-[0-9a-f]+\.js$/.test(f));
     assert.equal(widgets.length, 1, `one widget asset in ${assets}`);
     const widget = await fs.readFile(path.join(book, "_build/site/public", widgets[0]), "utf8");
-    assert.equal(widget, await fs.readFile(path.join(repo, "dist/widget.js"), "utf8"), "the bundled widget");
+    assert.equal(widget, await fs.readFile(path.join(repo, "dist/myst-annotate-widget.js"), "utf8"), "the bundled widget");
 
     for (const page of ["index", "page"]) {
       const json = await fs.readFile(path.join(book, `_build/site/content/${page}.json`), "utf8");
@@ -72,6 +72,36 @@ test("plugin listed as a local path (installed as npm would)", { timeout: 300_00
     await fs.copyFile(pluginFile, path.join(dir, "myst-annotate.mjs"));
     return "node_modules/myst-annotate/dist/myst-annotate.mjs";
   });
+});
+
+test("widget embedded on one page with the anywidget directive (no plugin listed)", { timeout: 300_000 }, async () => {
+  const book = await fs.mkdtemp(path.join(os.tmpdir(), "myst-annotate-"));
+  try {
+    await fs.writeFile(path.join(book, "myst.yml"),
+      "version: 1\nproject:\n  title: Test\n  toc:\n    - file: with.md\n    - file: without.md\nsite:\n  template: ./stub\n");
+    await fs.mkdir(path.join(book, "stub"));
+    await fs.writeFile(path.join(book, "stub/template.yml"), "myst: v1\nkind: site\n");
+    await fs.copyFile(path.join(repo, "dist/myst-annotate-widget.js"), path.join(book, "myst-annotate-widget.js"));
+    await fs.writeFile(path.join(book, "with.md"), "# With\n\nSome text.\n\n```{anywidget} myst-annotate-widget.js\n```\n");
+    await fs.writeFile(path.join(book, "without.md"), "# Without\n\nMore text.\n");
+
+    const { stdout, stderr } = await promisify(execFile)(process.execPath, [jupyterBook, "build", "--site"], { cwd: book });
+    assert.doesNotMatch(stdout + stderr, /⛔|Error/, stdout + stderr);
+
+    const assets = await fs.readdir(path.join(book, "_build/site/public"));
+    const widgets = assets.filter((f) => /^myst-annotate-widget-[0-9a-f]+\.js$/.test(f));
+    assert.equal(widgets.length, 1, `one widget asset in ${assets}`);
+    const pages = await fs.readdir(path.join(book, "_build/site/content"));
+    const withWidget = [];
+    for (const page of pages) {
+      const json = await fs.readFile(path.join(book, "_build/site/content", page), "utf8");
+      if (json.includes(`"type":"anywidget","esm":"/${widgets[0]}"`)) withWidget.push(page);
+    }
+    assert.equal(withWidget.length, 1, "only the page with the directive has the widget");
+    assert.equal(pages.length, 2);
+  } finally {
+    await fs.rm(book, { recursive: true, force: true });
+  }
 });
 
 test("plugin listed as a URL (MyST downloads only that one file)", { timeout: 300_000 }, async () => {

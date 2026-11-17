@@ -464,6 +464,8 @@ const render = function ({ el }) {
     console.warn("[myst-annotate] This browser does not support the CSS Custom Highlight API.");
     return;
   }
+  // One copy per page: a page can embed the widget while the plugin also adds it.
+  if (document.getElementById(HOST_ID)) return;
   // Marks are limited to the page's article; `el` lives in a shadow root inside it.
   const anchorHost = el.getRootNode().host;
   const root = (anchorHost && anchorHost.closest("article")) || document.body;

@@ -37,7 +37,7 @@ Items marked **[proposed]** were suggested by Claude and approved as written.
   - every annotation under the point, each with its rendered body, timestamps, **✎ Edit** and **🗑 Delete**;
   - **[proposed]** a row of swatches + ⊘ below them, only if a highlight is under the point;
   - a **✕** in the popover's top-right corner closes it;
-  - highlight only, no annotation: the swatches + ⊘ toolbar, with ✕ to close it.
+  - highlight only, no annotation: the same toolbar as for selected text, `[ ✎ Annotate | 🟡 🟣 🔵 🟢 🔴 ⊘ | ✕ ]`. **Annotate** (or **A**) starts a note on the **whole** clicked highlight, including parts a newer highlight covers, trimmed of leading/trailing spaces, in the sidebar's Annotations tab. The note is independent of the highlight. The popover for annotated text has no Annotate button.
 - Clicking annotated text also opens the sidebar and marks those annotations' cards (auto-open).
 - **[proposed]** ✎ Edit in the popover opens that card in edit mode in the sidebar, so all editing happens in one place.
 
@@ -51,7 +51,7 @@ Items marked **[proposed]** were suggested by Claude and approved as written.
   - **search box**, which filters by note text and quoted text in the current tab and scope
   - **eye toggle** (show/hide marks)
 - **Annotations tab:** cards in document order, showing the quote, rendered body, timestamps, Edit and Delete. Clicking a card scrolls to its text and briefly flashes it.
-- **Highlights tab:** each highlight's quote with its colour, in document order. Click to scroll to it; delete (no confirmation).
+- **Highlights tab:** each highlight's quote with its colour, in document order. Click to scroll to it; delete (no confirmation). An annotate icon before Delete starts a note on the whole highlight (trimmed), in the Annotations tab. In the Whole book view, a highlight on another page gets its note on that page, edited in this sidebar.
 - **Page notes tab:** a "New page note" button. Notes about the whole page, with the same editor, timestamps, drafts and delete as annotations, newest first.
 - **Orphans tab:** annotations whose text can't be found any more, after both the saved position and the text search fail. Shows the quote and body; they can be edited or deleted.
 - **Orphaned highlights** (text no longer found) are deleted from storage silently.

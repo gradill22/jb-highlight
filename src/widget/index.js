@@ -191,6 +191,24 @@ const createApp = function (root) {
     sidebar.open({ tab: "annotations", scope: "page", focus: [item.id], editId: item.id });
   };
 
+  /**
+   * Annotate a highlight's whole text (including any part a newer highlight covers),
+   * trimmed of leading/trailing spaces. The note is independent of the highlight.
+   * `scope` keeps the sidebar in its This page / Whole book view.
+   */
+  app.annotateHighlight = function (path, highlight, scope = "page") {
+    const { start, end, text } = highlight;
+    const lead  = text.length - text.trimStart().length;
+    const trail = text.length - text.trimEnd().length;
+    if (!text.trim()) return;
+    const item = {
+      id: store.newId(), start: start + lead, end: end - trail, text: text.trim(),
+      body: "", draft: "", created: null,
+    };
+    mutate(path, (page) => page.annotations.push(item));
+    sidebar.open({ tab: "annotations", scope, focus: [item.id], editId: item.id });
+  };
+
   app.newPageNote = function () {
     const item = { id: store.newId(), body: "", draft: "", created: null };
     mutate(app.path, (page) => page.pageNotes.unshift(item));
@@ -348,8 +366,16 @@ const createApp = function (root) {
       return;
     }
     if (e.altKey || e.ctrlKey || e.metaKey || isEditable(e)) return;
-    if (float.mode !== "selection" || !pendingSel) return;
     const key = e.key.toLowerCase();
+    // A also works in a clicked highlight's toolbar, whose Annotate button advertises it.
+    if (float.mode === "highlight" && key === "a") {
+      e.preventDefault();
+      const highlight = float.activeHighlight;
+      float.hide();
+      app.annotateHighlight(app.path, highlight);
+      return;
+    }
+    if (float.mode !== "selection" || !pendingSel) return;
     if (key === "a") {
       e.preventDefault();
       app.annotateSelection();

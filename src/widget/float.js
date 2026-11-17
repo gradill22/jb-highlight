@@ -7,6 +7,7 @@ export const createFloat = function (app) {
   app.shadow.append(el);
   let mode = null; // "selection" | "highlight" | "notes"
   let anchorRect = null;
+  let activeHighlight = null; // the clicked highlight, while its toolbar is open
 
   /** Centre on the viewport rect; above it, or below if there is no room above. */
   const position = function (rect) {
@@ -31,9 +32,14 @@ export const createFloat = function (app) {
 
   const divider = () => h("span", { class: "ma-divider" });
 
+  /** The Annotate button, identical in the selection and highlight toolbars. */
+  const annotateButton = (onclick) =>
+    button({ class: "ma-annotate", title: "Annotate (A)", onclick }, icon(ICONS.annotate), h("span", {}, "Annotate"));
+
   const show = function (newMode, className, children, rect) {
     mode = newMode;
     anchorRect = rect;
+    activeHighlight = null;
     el.className = `ma-float ${className}`;
     el.setAttribute("role", newMode === "notes" ? "dialog" : "toolbar");
     el.replaceChildren(...children.flat(Infinity).filter(Boolean));
@@ -42,12 +48,12 @@ export const createFloat = function (app) {
 
   const float = {
     get mode() { return mode; },
+    get activeHighlight() { return activeHighlight; },
     hovered: () => el.matches(":hover"),
 
     showSelection(sel) {
       show("selection", "ma-toolbar", [
-        button({ class: "ma-annotate", title: "Annotate (A)", onclick: () => app.annotateSelection() },
-          icon(ICONS.annotate), h("span", {}, "Annotate")),
+        annotateButton(() => app.annotateSelection()),
         divider(),
         swatchRow(app, (color) => app.highlightSelection(color), () => app.clearSelection()),
         divider(),
@@ -56,15 +62,18 @@ export const createFloat = function (app) {
       ], sel.rect);
     },
 
-    /** Toolbar for a clicked highlight: recolour or remove it. */
+    /** Toolbar for a clicked highlight, laid out like the selection toolbar: annotate, recolour or remove it. */
     showHighlight(item, rect) {
       show("highlight", "ma-toolbar", [
+        annotateButton(() => { float.hide(); app.annotateHighlight(app.path, item); }),
+        divider(),
         swatchRow(app,
           (color) => { float.hide(); app.recolor(item, color); },
           () => { float.hide(); app.removeItem(app.path, "highlights", item.id); }),
         divider(),
         dismissButton(() => float.hide()),
       ], rect);
+      activeHighlight = item;
     },
 
     /** Popover for clicked annotations, plus the highlight under the point (if any). */
@@ -97,6 +106,7 @@ export const createFloat = function (app) {
 
     hide() {
       mode = null;
+      activeHighlight = null;
       el.hidden = true;
     },
   };

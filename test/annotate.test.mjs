@@ -403,6 +403,124 @@ describe("highlighting from sidebar cards, and the Delete button", () => {
   test("no page errors", () => assert.deepEqual(page.errors, []));
 });
 
+describe("annotating highlights", () => {
+  let page;
+  // "Alpha beta gamma delta epsilon zeta eta theta." after the 8-character h1.
+  const YELLOW  = { id: "y", start: H1 + 6,  end: H1 + 30, color: "yellow",  text: "beta gamma delta epsilon" };
+  const MAGENTA = { id: "m", start: H1 + 11, end: H1 + 22, color: "magenta", text: "gamma delta" };
+  const SPACED  = { id: "g", start: H1 + 30, end: H1 + 36, color: "green",   text: " zeta " };
+
+  const activeTab = () => ui(page, ".ma-tab.is-active").getAttribute("data-tab");
+  const editingCard = async () => {
+    const id = await ui(page, ".ma-list [data-id]:has(textarea)").getAttribute("data-id");
+    return { id, quote: await card(page, id).locator(".ma-quote").textContent() };
+  };
+  /** Every control in the floating toolbar, as [class, label, text]. */
+  const toolbarShape = () => ui(page, ".ma-float").evaluate((el) => [...el.children].map((c) =>
+    [c.className, c.getAttribute("aria-label") || c.getAttribute("title"), c.textContent]));
+  const cancelEditing = async () => {
+    const { id } = await editingCard();
+    await card(page, id).getByRole("button", { name: "Cancel" }).click();
+  };
+
+  before(async () => {
+    page = await newPage(browser, { pages: PAGES });
+    await page.open("/book/index");
+    await seed(page, "/book/index", { title: "Page One", highlights: [YELLOW, MAGENTA, SPACED] });
+    await seed(page, "/book/page2", {
+      title: "Page Two", highlights: [{ id: "q", start: 8 + 6, end: 8 + 11, color: "cyan", text: "ipsum" }],
+    });
+    await reload(page);
+  });
+
+  test("a clicked highlight's toolbar looks exactly like the selection toolbar", async () => {
+    await selectText(page, "#p2", 0, 6);
+    const selection = await toolbarShape();
+    await page.mouse.click(5, 5);
+    await clickText(page, "#p1", 7, 9); // yellow "beta"
+    assert.deepEqual(await toolbarShape(), selection);
+    assert.equal(selection[0][2], "Annotate");
+  });
+
+  test("Annotate on a bottom-layer highlight covers the whole highlight, not just the clicked piece", async () => {
+    await ui(page, ".ma-float .ma-annotate").click();
+    assert.equal(await floatVisible(page), false);
+    assert.ok(await sidebarOpen(page));
+    assert.equal(await activeTab(), "annotations");
+    const [note] = await notes(page);
+    assert.deepEqual([note.text, note.start, note.end], [YELLOW.text, YELLOW.start, YELLOW.end]);
+    assert.equal((await editingCard()).quote, YELLOW.text);
+    assert.deepEqual((await highlights(page))["myst-annotate-note"], [YELLOW.text]);
+    assert.equal((await stored(page, "/book/index")).highlights.length, 3, "highlights unchanged");
+    await cancelEditing();
+    assert.deepEqual(await notes(page), []);
+  });
+
+  test("Annotate on the top layer covers that highlight", async () => {
+    await clickText(page, "#p1", 18, 20); // magenta "delta"
+    await ui(page, ".ma-float .ma-annotate").click();
+    assert.equal((await notes(page))[0].text, MAGENTA.text);
+    await cancelEditing();
+  });
+
+  test("leading and trailing spaces are trimmed", async () => {
+    await clickText(page, "#p1", 32, 34); // green " zeta "
+    await ui(page, ".ma-float .ma-annotate").click();
+    const [note] = await notes(page);
+    assert.deepEqual([note.text, note.start, note.end], ["zeta", H1 + 31, H1 + 35]);
+    await cancelEditing();
+  });
+
+  test("A annotates the clicked highlight", async () => {
+    await clickText(page, "#p1", 18, 20);
+    await page.keyboard.press("a");
+    assert.equal((await notes(page))[0].text, MAGENTA.text);
+    assert.equal(await activeTab(), "annotations");
+  });
+
+  test("the note is independent: clearing the highlight keeps it", async () => {
+    await page.keyboard.type("On gamma delta");
+    const { id } = await editingCard();
+    await card(page, id).getByRole("button", { name: "Save" }).click();
+    await clickText(page, "#p1", 0, 3); // close any popover
+    // The magenta highlight now has a note on it, so clicking opens the note popover.
+    await clickText(page, "#p1", 18, 20);
+    assert.equal(await ui(page, ".ma-float .ma-annotate").count(), 0, "no Annotate in the note popover");
+    await ui(page, ".ma-float .ma-pop-hl .ma-swatch-clear").click();
+    const stored1 = await stored(page, "/book/index");
+    assert.deepEqual(stored1.highlights.map((h) => h.id), ["y", "g"]);
+    assert.deepEqual(stored1.annotations.map((a) => a.body), ["On gamma delta"]);
+    assert.deepEqual((await highlights(page))["myst-annotate-note"], [MAGENTA.text]);
+  });
+
+  test("the Highlights tab's annotate icon sits before Delete and annotates the whole highlight", async () => {
+    await ui(page, '.ma-tab[data-tab="highlights"]').click();
+    const row = card(page, "y");
+    assert.deepEqual(await row.locator("button").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label"))),
+      ["Annotate highlight", "Delete highlight"]);
+    await row.getByRole("button", { name: "Annotate highlight" }).click();
+    assert.equal(await activeTab(), "annotations");
+    assert.equal((await editingCard()).quote, YELLOW.text);
+    await cancelEditing();
+  });
+
+  test("in the Whole book view, another page's highlight is annotated here", async () => {
+    await ui(page, '.ma-seg[data-scope="book"]').click();
+    await ui(page, '.ma-tab[data-tab="highlights"]').click();
+    await card(page, "q").getByRole("button", { name: "Annotate highlight" }).click();
+    assert.equal(await activeTab(), "annotations");
+    assert.equal(await ui(page, '.ma-seg[data-scope="book"]').getAttribute("class"), "ma-seg is-active");
+    const { id, quote } = await editingCard();
+    assert.equal(quote, "ipsum");
+    await page.keyboard.type("From page one");
+    await card(page, id).getByRole("button", { name: "Save" }).click();
+    assert.deepEqual((await stored(page, "/book/page2")).annotations.map((a) => [a.text, a.body]), [["ipsum", "From page one"]]);
+    assert.ok(page.url().endsWith("/book/index"), "stayed on this page");
+  });
+
+  test("no page errors", () => assert.deepEqual(page.errors, []));
+});
+
 describe("show/hide and keyboard shortcuts", () => {
   let page;
   before(async () => {

@@ -1,5 +1,9 @@
 # myst-annotate
 
+[![npm version](https://img.shields.io/npm/v/myst-annotate)](https://www.npmjs.com/package/myst-annotate)
+[![CI](https://github.com/gradill22/myst-annotate/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/gradill22/myst-annotate/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/npm/l/myst-annotate)](https://github.com/gradill22/myst-annotate/blob/main/LICENSE)
+
 Private, local highlighting and annotation for [Jupyter Book 2](https://jupyterbook.org) and other [MyST](https://mystmd.org) sites, in the spirit of [Hypothesis](https://web.hypothes.is/) but without any social features. There are no accounts and no servers. Everything is stored in the reader's own browser.
 
 ## What readers can do

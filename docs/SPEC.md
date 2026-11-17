@@ -70,6 +70,7 @@ Items marked **[proposed]** were suggested by Claude and approved as written.
 - npm package **`myst-annotate`**.
 - Source lives in `src/`. An **esbuild** step (`npm run build`, also run automatically by `npm publish`) bundles the widget, the Markdown parser (**[proposed]** markdown-it), KaTeX and its CSS and fonts into `dist/`. No network access is needed at runtime.
 - KaTeX fonts are embedded as `woff2` data URLs, because MyST copies only the widget's single JS file into the build. **[proposed]** Expected widget size: about 600–800 KB (about 200–250 KB gzipped). It loads once and is then cached.
+- Per-page use: releases (from v0.2.1) also attach `myst-annotate-widget.js`, which a page can embed with the `{anywidget}` directive instead of listing the plugin site-wide. Only one copy of the widget runs per page.
 - Usage: `npm install myst-annotate`, then in `myst.yml`:
   ```yaml
   project:

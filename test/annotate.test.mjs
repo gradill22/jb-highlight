@@ -600,6 +600,27 @@ describe("narrow screens and dark mode", () => {
     assert.deepEqual(page.errors, []);
   });
 
+  test("a second copy of the widget on the same page does nothing", async () => {
+    const page = await newPage(browser, { pages: PAGES });
+    await page.open("/book/index");
+    // Mount a second widget in another host, as if the page embedded it while the plugin also added it.
+    await page.evaluate(async () => {
+      const host = document.createElement("div");
+      document.querySelector("article").append(host);
+      const el = document.createElement("div");
+      host.attachShadow({ mode: "open" }).append(el);
+      const widget = (await import("/widget.js")).default;
+      window.secondCleanup = await widget.render({ model: {}, el });
+    });
+    assert.equal(await page.locator("#myst-annotate").count(), 1);
+    assert.equal(await page.evaluate(() => window.secondCleanup), undefined);
+    await selectText(page, "#p1", 0, 5);
+    assert.equal(await ui(page, ".ma-float").count(), 1);
+    await ui(page, '.ma-float .ma-swatch[data-color="green"]').click();
+    assert.deepEqual((await stored(page, "/book/index")).highlights.map((h) => h.text), ["Alpha"]);
+    assert.deepEqual(page.errors, []);
+  });
+
   test("the UI follows the theme's .dark class", async () => {
     const page = await newPage(browser, { pages: PAGES });
     await page.open("/book/index");

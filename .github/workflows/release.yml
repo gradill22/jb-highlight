@@ -1,5 +1,5 @@
 # Runs when a GitHub release is published (tag vX.Y.Z, matching package.json):
-# tests, attaches the plugin file to the release, and publishes the package to npm.
+# tests, attaches the plugin and widget files to the release, and publishes the package to npm.
 name: Release
 
 on:
@@ -7,7 +7,7 @@ on:
     types: [published]
 
 permissions:
-  contents: write # attach myst-annotate.mjs to the release
+  contents: write # attach myst-annotate.mjs and myst-annotate-widget.js to the release
   id-token: write # npm trusted publishing (OIDC); no npm token is stored in GitHub
 
 jobs:
@@ -37,8 +37,9 @@ jobs:
 
       - run: npm test
 
-      - name: Attach the plugin to the release
-        run: gh release upload "$GITHUB_REF_NAME" dist/myst-annotate.mjs --clobber
+      # The plugin, plus the widget on its own for embedding on chosen pages (anywidget directive).
+      - name: Attach the plugin and widget to the release
+        run: gh release upload "$GITHUB_REF_NAME" dist/myst-annotate.mjs dist/myst-annotate-widget.js --clobber
         env:
           GH_TOKEN: ${{ github.token }}
 

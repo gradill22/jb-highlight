@@ -5,6 +5,7 @@ import { chromium } from "playwright";
 
 const WIDGET = readFileSync(new URL("../dist/widget.js", import.meta.url), "utf8");
 export const ORIGIN = "http://book.test";
+export const SECURE_ORIGIN = "https://book.test";
 
 export const DEFAULT_PAGES = {
   "/book/index": "<h1>Page One</h1><p id=\"p1\">Some text to highlight here. Another sentence with <strong>bold words</strong> in it.</p><p id=\"p2\">A second paragraph.</p>",
@@ -30,22 +31,40 @@ const html = (content) => `<!doctype html><html><head><meta name="viewport" cont
 
 export const launch = () => chromium.launch();
 
-/** A new page serving `pages` ({ pathname: articleHtml }). */
-export const newPage = async function (browser, { pages = DEFAULT_PAGES, ...contextOptions } = {}) {
+/**
+ * A new page serving `pages` ({ pathname: articleHtml }). With `secure`, pages are served
+ * from an https:// origin, where the async Clipboard API exists and clipboard access is granted.
+ */
+export const newPage = async function (browser, { pages = DEFAULT_PAGES, secure = false, ...contextOptions } = {}) {
+  const origin = secure ? SECURE_ORIGIN : ORIGIN;
   const context = await browser.newContext(contextOptions);
-  const page = await context.newPage();
-  page.errors = [];
-  page.on("pageerror", (e) => page.errors.push(e.message));
-  await page.route(`${ORIGIN}/**`, (route) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: SECURE_ORIGIN });
+  const serve = (route) => {
     const { pathname } = new URL(route.request().url());
     if (pathname === "/widget.js") return route.fulfill({ contentType: "text/javascript", body: WIDGET });
     return route.fulfill({ contentType: "text/html", body: html(pages[pathname] ?? "<p>Missing page</p>") });
-  });
+  };
+  await context.route(`${ORIGIN}/**`, serve);
+  await context.route(`${SECURE_ORIGIN}/**`, serve);
+  const page = await context.newPage();
+  page.errors = [];
+  page.on("pageerror", (e) => page.errors.push(e.message));
   page.open = async (path) => {
-    await page.goto(ORIGIN + path);
+    await page.goto(origin + path);
     await page.waitForFunction(() => window.ready);
   };
   return page;
+};
+
+/** The system clipboard's text, read from a page on the https:// origin of the same browser context. */
+export const readClipboard = async function (page) {
+  const reader = await page.context().newPage();
+  await reader.route(`${SECURE_ORIGIN}/**`, (route) => route.fulfill({ contentType: "text/html", body: "<p>reader</p>" }));
+  await reader.goto(`${SECURE_ORIGIN}/clipboard-reader`);
+  const text = await reader.evaluate(() => navigator.clipboard.readText());
+  await reader.close();
+  await page.bringToFront();
+  return text;
 };
 
 /** { highlightName: [range text, …] } for every registered CSS highlight. */

@@ -7,10 +7,11 @@ Items marked **[proposed]** were suggested by Claude and approved as written.
 ## 1. Selection toolbar
 
 - Appears above the selected text, or below it when there's no room above (as today).
-- Layout: `[ ✎ Annotate | 🟡 🟣 🔵 🟢 🔴 ⊘ | ✕ ]`. Every action is one click.
+- Layout: `[ ✎ Annotate | 🟡 🟣 🔵 🟢 🔴 ⊘ | ⧉ ✕ ]`. Every action is one click.
   - **Annotate** creates an annotation on the selection (see §3).
   - **Swatches** highlight in that colour (current behaviour, including layering).
   - **⊘ clear swatch** (white circle, red slash; the last "colour") removes **highlights only** under the selection, with no confirmation. Annotations aren't affected.
+  - **⧉ Copy** copies the selected text exactly. The toolbar closes, the text stays selected, and "Copied" appears briefly where the toolbar was ("Couldn't copy" on failure). Plain-HTTP pages, which lack the Clipboard API, use the copy command.
   - **✕** closes the toolbar and leaves the text selected.
 - Shortcuts while the toolbar is showing: **A** = annotate, **H** = highlight in the last colour used (yellow by default). They're ignored while focus is in a text field.
 
@@ -34,10 +35,10 @@ Items marked **[proposed]** were suggested by Claude and approved as written.
 ## 4. Clicking marked text: popover
 
 - Clicking annotated or highlighted text opens a popover at that spot:
-  - every annotation under the point, each with its rendered body, timestamps, **✎ Edit** and **🗑 Delete**;
+  - every annotation under the point, each with its rendered body, timestamps, **⧉ Copy** (copies the annotated text, not the note), the highlighter, **✎ Edit** and **🗑 Delete**;
   - **[proposed]** a row of swatches + ⊘ below them, only if a highlight is under the point;
   - a **✕** in the popover's top-right corner closes it;
-  - highlight only, no annotation: the swatches + ⊘ toolbar, with ✕ to close it.
+  - highlight only, no annotation: the same toolbar as for selected text, `[ ✎ Annotate | 🟡 🟣 🔵 🟢 🔴 ⊘ | ⧉ ✕ ]`. **⧉ Copy** copies the whole highlight, trimmed. **Annotate** (or **A**) starts a note on the **whole** clicked highlight, including parts a newer highlight covers, trimmed of leading/trailing spaces, in the sidebar's Annotations tab. The note is independent of the highlight. The popover for annotated text has no Annotate button.
 - Clicking annotated text also opens the sidebar and marks those annotations' cards (auto-open).
 - **[proposed]** ✎ Edit in the popover opens that card in edit mode in the sidebar, so all editing happens in one place.
 
@@ -51,7 +52,8 @@ Items marked **[proposed]** were suggested by Claude and approved as written.
   - **search box**, which filters by note text and quoted text in the current tab and scope
   - **eye toggle** (show/hide marks)
 - **Annotations tab:** cards in document order, showing the quote, rendered body, timestamps, Edit and Delete. Clicking a card scrolls to its text and briefly flashes it.
-- **Highlights tab:** each highlight's quote with its colour, in document order. Click to scroll to it; delete (no confirmation).
+- **Annotation and page-note cards** have no Copy button.
+- **Highlights tab:** each highlight's quote with its colour, in document order. Click to scroll to it; delete (no confirmation). Icons: Annotate, Copy (the whole highlight, trimmed; "Copied" appears by the row), Delete. Annotate starts a note on the whole highlight (trimmed), in the Annotations tab. In the Whole book view, a highlight on another page gets its note on that page, edited in this sidebar.
 - **Page notes tab:** a "New page note" button. Notes about the whole page, with the same editor, timestamps, drafts and delete as annotations, newest first.
 - **Orphans tab:** annotations whose text can't be found any more, after both the saved position and the text search fail. Shows the quote and body; they can be edited or deleted.
 - **Orphaned highlights** (text no longer found) are deleted from storage silently.

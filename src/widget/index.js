@@ -73,6 +73,31 @@ const visibleSegments = function (highlights) {
 
 const LABELS = { annotations: "annotation", pageNotes: "page note" };
 
+/**
+ * Put text on the clipboard. The async Clipboard API only exists on HTTPS (and localhost)
+ * pages, so plain-HTTP books fall back to the copy command, whose copy event we fill in.
+ * Neither way changes the page's selection.
+ */
+const copyToClipboard = async function (text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const fill = (e) => {
+      e.clipboardData.setData("text/plain", text);
+      e.preventDefault();
+    };
+    document.addEventListener("copy", fill, { once: true });
+    try {
+      return document.execCommand("copy");
+    } catch {
+      return false;
+    } finally {
+      document.removeEventListener("copy", fill);
+    }
+  }
+};
+
 const createApp = function (root) {
   injectDocStyles();
   const host = h("div", { id: HOST_ID });
@@ -191,6 +216,24 @@ const createApp = function (root) {
     sidebar.open({ tab: "annotations", scope: "page", focus: [item.id], editId: item.id });
   };
 
+  /**
+   * Annotate a highlight's whole text (including any part a newer highlight covers),
+   * trimmed of leading/trailing spaces. The note is independent of the highlight.
+   * `scope` keeps the sidebar in its This page / Whole book view.
+   */
+  app.annotateHighlight = function (path, highlight, scope = "page") {
+    const { start, end, text } = highlight;
+    const lead  = text.length - text.trimStart().length;
+    const trail = text.length - text.trimEnd().length;
+    if (!text.trim()) return;
+    const item = {
+      id: store.newId(), start: start + lead, end: end - trail, text: text.trim(),
+      body: "", draft: "", created: null,
+    };
+    mutate(path, (page) => page.annotations.push(item));
+    sidebar.open({ tab: "annotations", scope, focus: [item.id], editId: item.id });
+  };
+
   app.newPageNote = function () {
     const item = { id: store.newId(), body: "", draft: "", created: null };
     mutate(app.path, (page) => page.pageNotes.unshift(item));
@@ -243,6 +286,29 @@ const createApp = function (root) {
     mutate(path, (page) => { page[kind] = page[kind].filter((i) => i.id !== id); });
   };
 
+  // ── Copying ──
+
+  /** Copy text, then briefly say so near `rect` (a viewport rect). */
+  app.copy = async function (text, rect) {
+    const ok = await copyToClipboard(text);
+    toast(ok ? "Copied" : "Couldn't copy", rect);
+  };
+
+  let toastTimer = null;
+  const toast = function (message, rect) {
+    toastEl.textContent = message;
+    toastEl.hidden = false;
+    const margin = 8;
+    const left = Math.max(margin, Math.min(rect.left + rect.width / 2 - toastEl.offsetWidth / 2,
+      window.innerWidth - toastEl.offsetWidth - margin));
+    let top = rect.top - toastEl.offsetHeight - margin;
+    if (top < margin) top = rect.bottom + margin;
+    toastEl.style.left = `${left}px`;
+    toastEl.style.top  = `${top}px`;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toastEl.hidden = true; }, 1500);
+  };
+
   // ── Navigation ──
 
   /** Scroll to an item on this page, flash it, and mark its card. */
@@ -292,6 +358,8 @@ const createApp = function (root) {
 
   // ── UI ──
 
+  const toastEl = h("div", { class: "ma-toast", role: "status", hidden: true });
+  shadow.append(toastEl);
   const dialog  = createDialog(shadow);
   const float   = createFloat(app);
   const sidebar = createSidebar(app);
@@ -348,8 +416,16 @@ const createApp = function (root) {
       return;
     }
     if (e.altKey || e.ctrlKey || e.metaKey || isEditable(e)) return;
-    if (float.mode !== "selection" || !pendingSel) return;
     const key = e.key.toLowerCase();
+    // A also works in a clicked highlight's toolbar, whose Annotate button advertises it.
+    if (float.mode === "highlight" && key === "a") {
+      e.preventDefault();
+      const highlight = float.activeHighlight;
+      float.hide();
+      app.annotateHighlight(app.path, highlight);
+      return;
+    }
+    if (float.mode !== "selection" || !pendingSel) return;
     if (key === "a") {
       e.preventDefault();
       app.annotateSelection();

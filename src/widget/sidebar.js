@@ -136,6 +136,9 @@ export const createSidebar = function (app) {
       return h("div", { class: `ma-card ma-hl-row${focused}`, "data-id": item.id, onclick: open },
         h("span", { class: "ma-dot", style: `background-color: ${color.hex}`, title: color.label }),
         h("span", { class: "ma-hl-text" }, item.text),
+        iconButton("annotate", "Annotate highlight", () => app.annotateHighlight(path, item, ui.scope)),
+        iconButton("copy", "Copy highlight", (e) =>
+          app.copy(item.text.trim(), e.currentTarget.closest(".ma-hl-row").getBoundingClientRect())),
         iconButton("trash", "Delete highlight", () => app.removeItem(path, kind, item.id)),
       );
     }

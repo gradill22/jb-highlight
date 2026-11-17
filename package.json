@@ -1,6 +1,6 @@
 {
   "name": "myst-annotate",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Local, private highlighting and annotation (Markdown + math) for Jupyter Book 2 / MyST sites.",
   "type": "module",
   "main": "./dist/myst-annotate.mjs",

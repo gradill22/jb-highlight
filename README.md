@@ -7,14 +7,22 @@ Private, local highlighting and annotation for [Jupyter Book 2](https://jupyterb
 - **Highlight:** select text and pick one of five colours from the toolbar. The last swatch, a white circle with a red slash, clears highlights from the selection. **✕** closes the toolbar and leaves the text selected. Highlights can overlap: a new one is drawn on top, and removing it shows the one underneath again.
 - **Annotate:** select text and choose **Annotate**. The sidebar opens with a new note. Notes support Markdown and LaTeX math (`$…$` and `$$…$$`), with a Write/Preview toggle. Annotated text gets a dotted amber underline.
 - **Page notes:** notes about the whole page, written from the sidebar.
-- **Click marked text** to bring up a popover for the notes under that point, with Highlight, Edit and Delete. If the text is highlighted, the popover also lets you recolour or remove the highlight.
+- **Click marked text** to bring up a popover for the notes under that point, with Copy, Highlight, Edit and Delete. If the text is highlighted, the popover also lets you recolour or remove the highlight.
+- **Annotate a highlight:** clicking a highlight with no note opens the same toolbar as selected text. **Annotate** starts a note on the whole highlight, even where a newer highlight covers part of it, trimmed of leading and trailing spaces. Each row in the sidebar's Highlights tab has the same annotate icon. The note is independent of the highlight, so removing or recolouring the highlight leaves it alone.
 - **Highlight a note's text:** the highlighter icon next to Edit, on a note's sidebar card or in its popover, opens the colour swatches for that note's quoted text.
 - **Sidebar:** opened from the tab on the right edge or with **Alt/⌥+Shift+A**. It has these parts:
   - tabs for Annotations, Highlights, Page notes and Orphans (notes whose text is no longer on the page)
   - a **This page / Whole book** switch
   - search
   - an eye button that hides or shows every mark
-- **Keyboard:** with text selected, **A** annotates and **H** highlights in the colour you used last.
+- **Copy text:** a copy icon (two overlapping squares) copies to the clipboard. It appears in four places:
+  - in the selection toolbar, before ✕: copies the selected text;
+  - in a clicked highlight's toolbar: copies the whole highlight, trimmed;
+  - on each note in the annotation popover: copies the text that note is attached to, not the note itself;
+  - on each row of the sidebar's Highlights tab.
+
+  The box closes, the text stays selected, and a brief "Copied" message appears. Plain-HTTP books, which have no Clipboard API, use the browser's copy command instead.
+- **Keyboard:** with text selected, **A** annotates and **H** highlights in the colour you used last. **A** also annotates a clicked highlight while its toolbar is open.
 - **Drafts:** unsaved notes are kept and come back the next time you open the page.
 - Deleting a note asks for confirmation first. Removing a highlight doesn't. The UI follows the theme's light and dark modes, and on narrow screens the sidebar covers the full width.
 
@@ -53,7 +61,23 @@ project:
     - https://github.com/gradill22/myst-annotate/releases/download/v0.1.0/myst-annotate.mjs
 ```
 
-A CDN that mirrors npm works too, for example `https://cdn.jsdelivr.net/npm/myst-annotate@0.1.0/dist/myst-annotate.mjs`. Pinning a version keeps your book from changing unexpectedly. MyST keeps a downloaded plugin for up to 30 minutes before fetching it again.
+A CDN that mirrors npm works too, for example `https://cdn.jsdelivr.net/npm/myst-annotate@0.1.0/dist/myst-annotate.mjs`.
+
+To always use the newest release instead of a pinned version, use the `latest` URL:
+
+```yaml
+project:
+  plugins:
+    - https://github.com/gradill22/myst-annotate/releases/latest/download/myst-annotate.mjs
+```
+
+MyST saves a downloaded plugin in `_build/cache/` and reuses it for **30 days**, so a new release isn't picked up until then. To fetch the newest release right away, run:
+
+```bash
+jupyter-book clean --cache
+```
+
+A build that starts without a `_build/` folder, such as a fresh CI checkout, always downloads the newest release. Pinning a version instead keeps your book from changing unexpectedly.
 
 > **`Error reading plugin: SyntaxError: Unexpected token '<'`** means the URL returned a web page (HTML), not JavaScript. A `github.com/…/blob/…` link does this, for example. The built plugin isn't committed to the repository, so use one of the options above.
 

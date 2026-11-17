@@ -6,6 +6,8 @@
 
 Private, local highlighting and annotation for [Jupyter Book 2](https://jupyterbook.org) and other [MyST](https://mystmd.org) sites, in the spirit of [Hypothesis](https://web.hypothes.is/) but without any social features. There are no accounts and no servers. Everything is stored in the reader's own browser.
 
+![myst-annotate on Chapter 5 of Learn Probability: layered colour highlights, dotted-underlined annotations, and the notes sidebar with Markdown and math](docs/images/overview.png)
+
 ## What readers can do
 
 - **Highlight:** select text and pick one of five colours from the toolbar. The last swatch, a white circle with a red slash, clears highlights from the selection. **✕** closes the toolbar and leaves the text selected. Highlights can overlap: a new one is drawn on top, and removing it shows the one underneath again.
@@ -29,6 +31,33 @@ Private, local highlighting and annotation for [Jupyter Book 2](https://jupyterb
 - **Keyboard:** with text selected, **A** annotates and **H** highlights in the colour you used last. **A** also annotates a clicked highlight while its toolbar is open.
 - **Drafts:** unsaved notes are kept and come back the next time you open the page.
 - Deleting a note asks for confirmation first. Removing a highlight doesn't. The UI follows the theme's light and dark modes, and on narrow screens the sidebar covers the full width.
+
+## Screenshots
+
+**Select text** and the toolbar offers Annotate, the five colours, the clear swatch, Copy, and ✕ to close it.
+
+<img src="docs/images/toolbar.png" width="769" alt="The selection toolbar above selected text: Annotate, five colour swatches, the clear swatch, Copy and close">
+
+**Write notes in Markdown with LaTeX math**, then preview them before saving.
+
+<p>
+  <img src="docs/images/note-write.png" width="360" alt="A new note in the sidebar editor, in Write mode, with Markdown and LaTeX source">
+  <img src="docs/images/note-preview.png" width="360" alt="The same note in Preview mode, with bold, italics and display math rendered">
+</p>
+
+**Click annotated text** to see its notes, with Copy, Highlight, Edit and Delete, plus colours for the highlight underneath.
+
+<img src="docs/images/popover.png" width="769" alt="The popover for clicked annotated text, showing the note with rendered math, its action icons, and a row of colour swatches">
+
+**Whole book view:** every highlight (or note) in the book, grouped by chapter, with Annotate, Copy and Delete.
+
+<img src="docs/images/whole-book.png" width="360" alt="The sidebar's Whole book view listing highlights from Chapters 4, 5 and 6, each with its colour and Annotate, Copy and Delete icons">
+
+**Dark mode:** the toolbar, sidebar and highlights follow the book's theme.
+
+![The same page in the book's dark theme, with highlights and the notes sidebar](docs/images/dark-mode.png)
+
+<sub>Screenshots show myst-annotate on [Learn Probability](https://snowch.github.io/learn_probability/) by Chris Snow, licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The highlights and notes were added for these screenshots.</sub>
 
 ## Installation
 

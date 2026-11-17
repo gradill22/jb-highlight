@@ -157,6 +157,14 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
 .ma-preview { min-height: 84px; padding: 6px 8px; border: 1px dashed var(--ma-border); border-radius: 6px; }
 .ma-editor-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 8px; }
 
+/* "Copied" message */
+.ma-toast {
+  position: fixed; z-index: 3; padding: 4px 10px; border-radius: 6px; pointer-events: none;
+  background: var(--ma-fg); color: var(--ma-bg); font: 600 13px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  box-shadow: var(--ma-shadow);
+}
+.ma-toolbar .ma-copy { width: 26px; height: 26px; }
+
 /* ── Confirm dialog ── */
 
 .ma-dialog {

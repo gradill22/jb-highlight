@@ -169,7 +169,7 @@ describe("clicking annotated text", () => {
     await clickText(page, "#p1", 12, 14); // n1: "gamma delta"
     const note = ui(page, ".ma-float .ma-pop-note");
     const actions = await note.locator(".ma-pop-foot button").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
-    assert.deepEqual(actions, ["Highlight", "Edit", "Delete"], "highlighter sits next to Edit");
+    assert.deepEqual(actions, ["Copy annotated text", "Highlight", "Edit", "Delete"], "highlighter sits next to Edit");
     assert.equal(await note.locator(".ma-picker").isVisible(), false);
     await note.getByRole("button", { name: "Highlight", exact: true }).click();
     assert.deepEqual(await note.locator(".ma-picker .ma-swatch").evaluateAll((els) => els.map((e) => e.dataset.color)),
@@ -497,7 +497,7 @@ describe("annotating highlights", () => {
     await ui(page, '.ma-tab[data-tab="highlights"]').click();
     const row = card(page, "y");
     assert.deepEqual(await row.locator("button").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label"))),
-      ["Annotate highlight", "Delete highlight"]);
+      ["Annotate highlight", "Copy highlight", "Delete highlight"]);
     await row.getByRole("button", { name: "Annotate highlight" }).click();
     assert.equal(await activeTab(), "annotations");
     assert.equal((await editingCard()).quote, YELLOW.text);

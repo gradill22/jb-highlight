@@ -73,6 +73,31 @@ const visibleSegments = function (highlights) {
 
 const LABELS = { annotations: "annotation", pageNotes: "page note" };
 
+/**
+ * Put text on the clipboard. The async Clipboard API only exists on HTTPS (and localhost)
+ * pages, so plain-HTTP books fall back to the copy command, whose copy event we fill in.
+ * Neither way changes the page's selection.
+ */
+const copyToClipboard = async function (text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const fill = (e) => {
+      e.clipboardData.setData("text/plain", text);
+      e.preventDefault();
+    };
+    document.addEventListener("copy", fill, { once: true });
+    try {
+      return document.execCommand("copy");
+    } catch {
+      return false;
+    } finally {
+      document.removeEventListener("copy", fill);
+    }
+  }
+};
+
 const createApp = function (root) {
   injectDocStyles();
   const host = h("div", { id: HOST_ID });
@@ -261,6 +286,29 @@ const createApp = function (root) {
     mutate(path, (page) => { page[kind] = page[kind].filter((i) => i.id !== id); });
   };
 
+  // ── Copying ──
+
+  /** Copy text, then briefly say so near `rect` (a viewport rect). */
+  app.copy = async function (text, rect) {
+    const ok = await copyToClipboard(text);
+    toast(ok ? "Copied" : "Couldn't copy", rect);
+  };
+
+  let toastTimer = null;
+  const toast = function (message, rect) {
+    toastEl.textContent = message;
+    toastEl.hidden = false;
+    const margin = 8;
+    const left = Math.max(margin, Math.min(rect.left + rect.width / 2 - toastEl.offsetWidth / 2,
+      window.innerWidth - toastEl.offsetWidth - margin));
+    let top = rect.top - toastEl.offsetHeight - margin;
+    if (top < margin) top = rect.bottom + margin;
+    toastEl.style.left = `${left}px`;
+    toastEl.style.top  = `${top}px`;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toastEl.hidden = true; }, 1500);
+  };
+
   // ── Navigation ──
 
   /** Scroll to an item on this page, flash it, and mark its card. */
@@ -310,6 +358,8 @@ const createApp = function (root) {
 
   // ── UI ──
 
+  const toastEl = h("div", { class: "ma-toast", role: "status", hidden: true });
+  shadow.append(toastEl);
   const dialog  = createDialog(shadow);
   const float   = createFloat(app);
   const sidebar = createSidebar(app);

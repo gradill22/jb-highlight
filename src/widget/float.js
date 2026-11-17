@@ -36,6 +36,13 @@ export const createFloat = function (app) {
   const annotateButton = (onclick) =>
     button({ class: "ma-annotate", title: "Annotate (A)", onclick }, icon(ICONS.annotate), h("span", {}, "Annotate"));
 
+  /** Copy button: closes the box, keeps any selection, and shows "Copied" where the box was. */
+  const copyButton = (getText, label = "Copy") => iconButton("copy", label, () => {
+    const rect = el.getBoundingClientRect();
+    float.hide();
+    app.copy(getText(), rect);
+  }, { class: "ma-icon-btn ma-copy" });
+
   const show = function (newMode, className, children, rect) {
     mode = newMode;
     anchorRect = rect;
@@ -57,6 +64,7 @@ export const createFloat = function (app) {
         divider(),
         swatchRow(app, (color) => app.highlightSelection(color), () => app.clearSelection()),
         divider(),
+        copyButton(() => sel.text, "Copy text"),
         // Close the toolbar but leave the text selected.
         dismissButton(() => float.hide()),
       ], sel.rect);
@@ -71,6 +79,7 @@ export const createFloat = function (app) {
           (color) => { float.hide(); app.recolor(item, color); },
           () => { float.hide(); app.removeItem(app.path, "highlights", item.id); }),
         divider(),
+        copyButton(() => item.text.trim(), "Copy text"),
         dismissButton(() => float.hide()),
       ], rect);
       activeHighlight = item;
@@ -89,6 +98,7 @@ export const createFloat = function (app) {
             item.created ? noteBody(item.body) : null,
             h("div", { class: "ma-pop-foot" },
               meta(item),
+              copyButton(() => item.text, "Copy annotated text"),
               toggle,
               iconButton("edit", "Edit", () => { float.hide(); app.startEdit(app.path, "annotations", item.id); }),
               iconButton("trash", "Delete", () => { float.hide(); app.removeItem(app.path, "annotations", item.id); }),
